@@ -1,0 +1,2512 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fundamental Programming Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Runs in <head> before first paint (no flash). Every storage call is in try/catch.
+    (function () {
+      const root = document.documentElement;
+      const KEY = 'guide_theme_v1';
+      let saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (e) {}
+      const systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      root.setAttribute('data-theme', saved || (systemLight ? 'light' : 'dark'));
+
+      function applyTheme(mode) {
+        root.setAttribute('data-theme', mode);
+        try { localStorage.setItem(KEY, mode); } catch (e) {}
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.setAttribute('aria-pressed', String(mode === 'light'));
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+        btn.setAttribute('aria-pressed', String(root.getAttribute('data-theme') === 'light'));
+        btn.addEventListener('click', function () {
+          applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+      });
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root { --font-display: 'Space Grotesk', sans-serif; --font-mono: 'JetBrains Mono', monospace; --sb-width: 280px; }
+    :root[data-theme="dark"] {
+      --bg: #0a0d14; --bg-card: #10141c; --bg2: #171c28;
+      --text: #e8e6e1; --text-muted: #9a978f; --border: rgba(255,255,255,0.08);
+      --accent: #0ea5e9; --accent2: #22c55e; --accent3: #f59e0b; --green: #16a34a;
+      --accent-rgb: 14, 165, 233; --accent2-rgb: 34, 197, 94; --accent3-rgb: 245, 158, 11; --green-rgb: 22, 163, 74;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #faf6ef; --bg-card: #f1ebdd; --bg2: #e8dfc9;
+      --text: #241f18; --text-muted: #6b6355; --border: #ddd3bf;
+      --accent: #0078ad; --accent2: #0e8238; --accent3: #9f6400; --green: #098336;
+      --accent-rgb: 0, 120, 173; --accent2-rgb: 14, 130, 56; --accent3-rgb: 159, 100, 0; --green-rgb: 9, 131, 54;
+      color-scheme: light;
+    }
+
+    /* ===== Base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 17px; line-height: 1.7; }
+    h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
+    h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 6px 0 16px; }
+    h3 { font-size: 1.15rem; margin: 0 0 8px; }
+    p { margin: 0 0 16px; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: 0.86em; background: rgba(var(--accent-rgb), 0.1); padding: 1px 6px; border-radius: 5px; }
+    pre { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 12px 0 16px; }
+    pre code { background: none; padding: 0; font-size: 13px; line-height: 1.6; }
+    button { font-family: inherit; }
+    :focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .section-inner { max-width: 760px; margin: 0 auto; padding: 56px 20px 8px; }
+    .section-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent2); }
+    section[id] { scroll-margin-top: 64px; }
+
+    /* ===== Hero ===== */
+    .hero { position: relative; padding: 64px 0 56px; text-align: center; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb), 0.12) 0%, transparent 70%); pointer-events: none; }
+    .hero::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none; }
+    .hero h1 { text-shadow: 0 0 60px rgba(var(--accent-rgb), 0.35); }
+    .hero-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 20px; }
+    .hero-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent2); margin-bottom: 14px; }
+    .hero-title { font-family: var(--font-display); font-weight: 700; line-height: 1.1; margin: 0 0 14px; font-size: clamp(2rem, 7vw, 3.2rem); }
+    .hero-tagline { font-style: italic; color: var(--text-muted); font-size: 1.05rem; margin: 0; }
+    .hero-intro { color: var(--text); margin: 0; }
+    .hero-meta { margin: 12px 0 20px; display: flex; justify-content: center; gap: 12px; }
+    .read-time-pill { font-family: var(--font-mono); font-size: 11px; color: var(--accent); background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 20px; padding: 4px 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ===== Reading bar ===== */
+    #reading-bar { position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 999; background: transparent; pointer-events: none; }
+    #reading-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3, var(--accent))); background-size: 200% 100%; animation: bar-shimmer 3s linear infinite; transition: width 0.15s ease-out; border-radius: 0 2px 2px 0; box-shadow: 0 0 8px var(--accent); }
+    @keyframes bar-shimmer { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+
+    /* ===== Back to top ===== */
+    #back-to-top { position: fixed; right: 18px; bottom: 18px; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border); color: var(--accent); font-size: 18px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 80; }
+    #back-to-top.show { opacity: 1; pointer-events: auto; }
+
+    /* ===== Sidebar ===== */
+    #sidebar { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 200; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+    .sb-link { display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 18px; color: var(--text-muted); text-decoration: none; font-size: 13.5px; border-left: 3px solid transparent; transition: all 0.18s; cursor: pointer; }
+    .sb-link:hover { color: var(--text); background: rgba(var(--accent-rgb), 0.05); border-left-color: var(--text-muted); }
+    .sb-link.active { color: var(--accent); border-left-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); font-weight: 700; }
+    .sb-sub-link { display: flex; align-items: center; gap: 6px; padding: 7px 16px 7px 40px; color: var(--text-muted); font-size: 12px; line-height: 1.3; border-left: 3px solid transparent; text-decoration: none; cursor: pointer; transition: all 0.18s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 32px; box-sizing: border-box; }
+    .sb-sub-link::before { content: '›'; opacity: 0.5; flex-shrink: 0; }
+    .sb-sub-link:hover { color: var(--text); background: rgba(var(--accent-rgb), 0.04); }
+    .sb-sub-link.active { color: var(--accent); border-left-color: var(--accent); }
+    @media (max-width: 860px) { .sb-sub-link { padding-left: 34px; font-size: 12.5px; } }
+    #sb-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #sb-overlay.visible { opacity: 1; pointer-events: auto; }
+    .sb-header { padding: 20px 20px 14px; border-bottom: 1px solid var(--border); }
+    .sb-emoji { font-size: 26px; color: var(--accent); margin-bottom: 6px; }
+    .sb-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .sb-cat { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-top: 4px; }
+    #sb-nav { flex: 1; overflow-y: auto; padding: 10px 0; }
+    .sb-group-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 12px 20px 6px; }
+    .sb-icon { font-size: 15px; }
+    .sb-link-text { flex: 1; }
+    .sb-section-num { font-family: var(--font-mono); font-size: 10px; color: var(--accent2); background: rgba(var(--accent2-rgb), 0.12); border-radius: 10px; padding: 1px 7px; }
+    .sb-link.visited .sb-section-num { color: var(--green); background: rgba(var(--green-rgb), 0.12); }
+    .sb-time { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); margin-left: auto; opacity: 0.6; white-space: nowrap; }
+    .sb-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); }
+    #sb-close { display: none; position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; align-items: center; justify-content: center; background: none; border: 1px solid var(--border); border-radius: 10px; color: var(--text); cursor: pointer; }
+
+    /* ===== Topbar ===== */
+    #topbar { position: fixed; top: 4px; left: var(--sb-width, 280px); right: 0; height: 56px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; z-index: 90; gap: 12px; }
+    #main { padding-top: 64px; margin-left: var(--sb-width); }
+    #menu-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none; border: 1px solid var(--border); border-radius: 10px; color: var(--text); cursor: pointer; flex-shrink: 0; }
+    @media (min-width: 861px) { #menu-btn { display: none; } }
+    #topbar-title { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    #search-wrap { position: relative; }
+    #search-input { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; color: var(--text); padding: 8px 36px 8px 14px; font-size: 13px; min-height: 36px; width: 220px; }
+    @media (max-width: 860px) { #search-input { width: 160px; } }
+    @media (max-width: 480px) { #search-input { width: 40vw; } }
+    .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; }
+    #search-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; min-width: 220px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; max-height: 320px; overflow-y: auto; opacity: 0; pointer-events: none; transform: translateY(-6px); transition: opacity 0.15s, transform 0.15s; z-index: 300; }
+    #search-results.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .search-result-item { padding: 10px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 1px solid var(--border); }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover, .search-result-item.active { background: rgba(var(--accent-rgb), 0.08); color: var(--text); }
+    .topbar-icon-btn { display: flex; align-items: center; gap: 6px; background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); border-radius: 20px; padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; color: var(--accent); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .topbar-icon-btn:hover { background: rgba(var(--accent-rgb), 0.16); }
+    .topbar-icon-btn.speaking { animation: listen-pulse 1.6s ease-in-out infinite; }
+    @keyframes listen-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.35); } 50% { box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0); } }
+    #theme-toggle { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); border-radius: 50%; color: var(--accent); cursor: pointer; }
+    #theme-toggle .icon-moon { display: none; }
+    :root[data-theme="light"] #theme-toggle .icon-sun { display: none; }
+    :root[data-theme="light"] #theme-toggle .icon-moon { display: block; }
+    .heart-btn .heart-icon { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; transition: fill 0.15s, stroke 0.15s, transform 0.15s; }
+    .heart-btn[aria-pressed="true"] .heart-icon { fill: var(--accent); stroke: var(--accent); }
+    .heart-btn.pulsing .heart-icon { animation: heart-pulse 0.32s ease; }
+    @keyframes heart-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+    .heart-closing-card { max-width: 480px; margin: 48px auto 64px; padding: 32px 28px; text-align: center; border: 1px solid var(--border); border-radius: 16px; background: var(--bg-card); }
+    .heart-closing-text { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin: 0 0 16px; }
+    .heart-btn-large { display: inline-flex; align-items: center; gap: 10px; background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 24px; padding: 12px 24px; font-family: var(--font-mono); font-size: 14px; color: var(--accent); cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+    .heart-btn-large:hover { background: rgba(var(--accent-rgb), 0.16); }
+    .heart-btn-large:active { transform: scale(0.97); }
+    .heart-btn-large .heart-icon { width: 18px; height: 18px; }
+    .heart-btn-large[aria-pressed="true"] { background: rgba(var(--accent-rgb), 0.16); }
+    .share-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(12px); background: var(--bg2); border: 1px solid rgba(var(--accent-rgb), 0.3); color: var(--text); font-family: var(--font-mono); font-size: 12px; padding: 10px 18px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 200; }
+    .share-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #topbar-more-wrap { display: contents; }
+    #topbar-more-menu { display: contents; }
+    #topbar-more-btn { display: none; }
+    @media (max-width: 860px) {
+      .heart-label { display: none; }
+      .listen-label, .print-label, .share-label { display: none; }
+      #topbar-more-btn { display: flex; }
+      #topbar-more-wrap { display: block; position: relative; }
+      #topbar-more-menu { display: none; position: absolute; top: calc(100% + 8px); right: 0; flex-direction: column; gap: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 200; min-width: 170px; }
+      #topbar-more-menu.open { display: flex; }
+      #topbar-more-menu .topbar-icon-btn { width: 100%; justify-content: flex-start; }
+      #topbar-more-menu .listen-label, #topbar-more-menu .print-label, #topbar-more-menu .share-label { display: inline; }
+    }
+
+    /* ===== Thread of Application ===== */
+    .applies-to-tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; color: var(--accent2); background: rgba(var(--accent2-rgb), 0.1); border: 1px solid rgba(var(--accent2-rgb), 0.3); border-radius: 20px; padding: 3px 10px; text-decoration: none; letter-spacing: 0.04em; cursor: pointer; }
+    .applies-to-tag:hover { background: rgba(var(--accent2-rgb), 0.22); }
+    .anchor-pulse { animation: anchor-flash 1.2s ease; }
+    @keyframes anchor-flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px rgba(var(--accent2-rgb), 0.4); } }
+
+    /* ===== Prose helpers (Sections 01-02) ===== */
+    .pull-quote { margin: 32px 0; padding: 8px 0 8px 22px; border-left: 4px solid var(--accent); font-family: var(--font-display); font-size: clamp(1.25rem, 3.6vw, 1.6rem); line-height: 1.35; font-weight: 600; }
+    .stat-card { margin: 32px 0; padding: 22px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; display: flex; align-items: center; gap: 20px; }
+    .stat-num { font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--accent); line-height: 1; }
+    .stat-text { font-size: 15px; color: var(--text-muted); }
+    .callout { margin: 28px 0; padding: 18px 20px; border: 1px solid rgba(var(--accent3-rgb), 0.35); border-left: 4px solid var(--accent3); background: rgba(var(--accent3-rgb), 0.07); border-radius: 0 12px 12px 0; }
+    .callout strong { color: var(--text); }
+    .def-list { margin: 16px 0 24px; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .def-list li { padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; font-size: 15px; }
+    .def-list li strong { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-right: 6px; }
+    .chart-wrap { position: relative; height: 320px; max-width: 100%; margin: 24px 0 8px; }
+    @media (max-width: 860px) { .chart-wrap { height: 260px; } }
+    .chart-caption { font-size: 13px; color: var(--text-muted); margin: 0 0 24px; text-align: center; }
+
+    /* ===== Section 03 accordion ===== */
+    .tactic-card { cursor: pointer; padding: 16px 20px; min-height: 56px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; transition: border-color 0.2s; }
+    .tactic-card:hover { border-color: rgba(var(--accent-rgb), 0.5); }
+    .tactic-card:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .tactic-header { pointer-events: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .tactic-header h3 { margin: 0; flex: 1; min-width: 0; }
+    .tactic-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 20px; padding: 2px 10px; }
+    .tactic-chevron { font-size: 20px; color: var(--text-muted); transition: transform 0.25s; }
+    .tactic-card.open .tactic-chevron { transform: rotate(180deg); }
+    .tactic-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.2s ease; padding: 0; }
+    .tactic-card.open .tactic-body { max-height: 2000px; padding: 12px 0 0; }
+    .tactic-body p { font-size: 15.5px; margin-bottom: 12px; }
+    .tactic-body strong.lbl { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); }
+    .tactic-body table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 16px; display: block; overflow-x: auto; }
+    .tactic-body th, .tactic-body td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
+    .tactic-body th { background: var(--bg2); }
+
+    /* ===== Section 04 flow ===== */
+    .flow { display: flex; flex-direction: column; align-items: stretch; }
+    .concept-card { padding: 20px 22px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
+    .concept-num { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent3); }
+    .flow-arrow { align-self: center; font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding: 8px 0; text-align: center; }
+    .concept-card p { font-size: 15.5px; }
+
+    /* ===== Section 05 actions ===== */
+    .action-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 20px; }
+    .action-card { padding: 22px 22px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
+    .action-card > .action-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+    .action-card h3 { font-size: 1.2rem; }
+    .action-note { margin: 12px 0; padding: 10px 14px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-size: 14.5px; }
+    .action-note b { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; color: var(--accent3); }
+    .action-note.try b { color: var(--accent2); }
+    .action-card p { font-size: 15.5px; }
+
+    /* ===== Section 06 contrast ===== */
+    .bc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .bc-box { padding: 18px 18px 8px; border-radius: 0 0 14px 14px; }
+    .bc-box.benefit { background: rgba(var(--green-rgb), 0.08); border-top: 3px solid var(--green); }
+    .bc-box.consequence { background: rgba(var(--accent-rgb), 0.08); border-top: 3px solid var(--accent); }
+    .bc-box h3 { font-size: 1.05rem; }
+    .bc-item { display: flex; gap: 10px; margin-bottom: 14px; font-size: 14.5px; line-height: 1.55; }
+    .bc-dot { flex: 0 0 10px; height: 10px; border-radius: 50%; margin-top: 7px; }
+    .benefit .bc-dot { background: var(--green); }
+    .consequence .bc-dot { background: var(--accent); }
+    @media (max-width: 700px) { .bc-grid { grid-template-columns: 1fr; } }
+
+    /* ===== Section 07 scenes ===== */
+    .story-scene { margin: 36px 0; }
+    .scene-setup { font-size: 13.5px; color: var(--text-muted); font-style: italic; margin-bottom: 16px; }
+    .scene-block { border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; }
+    .scene-block.wrong { background: rgba(var(--accent2-rgb),0.06); border: 1px solid rgba(var(--accent2-rgb),0.28); border-left: 4px solid var(--accent2); }
+    .scene-block.right { background: rgba(var(--green-rgb),0.06); border: 1px solid rgba(var(--green-rgb),0.28); border-left: 4px solid var(--green); }
+    .scene-label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+    .scene-label.wrong-label { color: var(--accent2); }
+    .scene-label.right-label { color: var(--green); }
+    .dialogue-line { margin: 0 0 10px; font-size: 14px; line-height: 1.55; }
+    .dialogue-line:last-child { margin-bottom: 0; }
+    .dialogue-line .speaker { font-weight: 700; color: var(--text); margin-right: 4px; }
+    .scene-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+    .scene-note strong { color: var(--text); }
+    .scene-tags { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ===== Section 08 story cards ===== */
+    .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 20px; align-items: start; }
+    .story-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.2s, border-color 0.2s; cursor: default; }
+    .story-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .story-card-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .story-avatar { font-size: 28px; }
+    .story-name { font-family: var(--font-display); font-weight: 700; }
+    .story-trait { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--accent); }
+    .story-hook { font-size: 14px; margin: 0 0 6px; }
+    .story-toggle { background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding: 8px 0; text-align: left; }
+    .story-full { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.2s ease; }
+    .story-full.open { max-height: 2000px; padding-top: 12px; }
+    .story-full p { font-size: 14.5px; line-height: 1.65; }
+
+    /* ===== Section 09 summary ===== */
+    .summary-banner { margin: 24px 0 8px; padding: 44px 28px; text-align: center; border-radius: 18px; border: 1px solid rgba(var(--accent-rgb), 0.3); background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(var(--accent2-rgb), 0.15)); }
+    .summary-sentence { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.3rem, 4.5vw, 1.9rem); line-height: 1.35; color: var(--accent); margin: 0; }
+    .summary-action { margin: 18px 0 0; font-size: 14px; color: var(--text-muted); }
+
+    /* ===== Micro-check ===== */
+    .micro-check { margin: 28px 0; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: rgba(var(--accent2-rgb), 0.04); }
+    .micro-check-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent2); margin: 0 0 8px; }
+    .micro-check-q { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 12px; }
+    .micro-check-options { display: flex; flex-direction: column; gap: 8px; }
+    .micro-check-option { text-align: left; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 14px; min-height: 40px; cursor: pointer; font-family: inherit; font-size: 13.5px; }
+    .micro-check-option:disabled { cursor: default; }
+    .micro-check-option.correct { border-color: var(--green); color: var(--green); }
+    .micro-check-option.selected.wrong { border-color: var(--accent); color: var(--accent); }
+
+    /* ===== Pre-test ===== */
+    .pretest-card { max-width: 720px; margin: 0 auto 32px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 12px; background: rgba(var(--accent2-rgb), 0.04); }
+    .pretest-note { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
+    .pretest-q .quiz-q-text { font-size: 16px; }
+    .pretest-done { margin: 0; color: var(--green); font-size: 14px; }
+    .pretest-q .quiz-options { gap: 10px; }
+    .pretest-q .quiz-option { padding: 12px 14px; font-size: 14.5px; }
+
+    /* ===== Quiz ===== */
+    #quiz-progress-bar { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    #quiz-score-display { color: var(--accent); font-weight: 600; }
+    .quiz-progress-sep { opacity: 0.5; }
+    .quiz-card { padding: 32px 28px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); }
+    .quiz-q-text { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.3; margin: 0 0 24px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 14px; }
+    .quiz-option { text-align: left; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 14px; padding: 16px 18px; min-height: 44px; cursor: pointer; font-family: inherit; font-size: 16px; transition: border-color 0.15s, background 0.15s; }
+    .quiz-option:hover:not(:disabled) { border-color: var(--accent2); }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-option.correct { border-color: var(--green); color: var(--green); }
+    .quiz-option.selected.wrong { border-color: var(--accent); color: var(--accent); }
+    #quiz-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+    .quiz-nav-btn { font-family: var(--font-mono); font-size: 14px; font-weight: 600; border-radius: 12px; padding: 14px 28px; cursor: pointer; min-height: 44px; background: none; border: 1px solid var(--border); color: var(--text-muted); }
+    .quiz-nav-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+    .quiz-nav-btn-primary { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+    .quiz-nav-btn-primary[disabled] { background: rgba(var(--accent2-rgb), 0.35); border-color: transparent; color: rgba(0,0,0,0.4); }
+    .quiz-complete { margin-top: 32px; padding: 28px 24px; border-radius: 14px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent2-rgb), 0.12)); border: 1px solid rgba(var(--accent-rgb), 0.3); text-align: center; }
+    .quiz-complete[hidden], #quiz-stepper[hidden] { display: none; }
+    .quiz-complete-score { font-family: var(--font-display); font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    #quiz-complete-message { color: var(--text-muted); margin-bottom: 4px; }
+    #quiz-growth-line { color: var(--text-muted); font-size: 14px; }
+    .quiz-review-list { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; text-align: left; }
+    #quiz-review-list { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; text-align: left; }
+    .quiz-review-item { padding: 12px 14px; border: 1px solid rgba(var(--accent2-rgb), 0.25); border-radius: 8px; }
+    .quiz-review-link { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--accent2); text-decoration: none; cursor: pointer; margin-bottom: 6px; }
+    .quiz-review-link:hover { text-decoration: underline; }
+    .quiz-review-your-answer { margin: 0 0 4px; font-size: 13.5px; color: var(--accent); }
+    .quiz-review-correct-answer { margin: 0 0 8px; font-size: 13.5px; color: var(--green); }
+    .quiz-review-explanation { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+    .quiz-retake-btn { font-family: var(--font-mono); font-size: 12px; background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 20px; padding: 8px 18px; cursor: pointer; min-height: 44px; }
+    .quiz-reset-btn { font-family: var(--font-mono); font-size: 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 20px; padding: 8px 18px; cursor: pointer; min-height: 44px; margin-left: 8px; }
+    .quiz-export-toolbar { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .quiz-export-btn { font-family: var(--font-mono); font-size: 13px; font-weight: 600; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 20px; padding: 10px 20px; cursor: pointer; min-height: 44px; transition: border-color 0.15s, color 0.15s; }
+    .quiz-export-btn:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+    .quiz-export-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ===== Section 11 / 12 ===== */
+    .disclaimer-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; color: var(--text-muted); font-size: 14.5px; }
+    .disclaimer-card p { font-size: 14.5px; }
+    .source-list { margin: 8px 0 0; padding-left: 20px; }
+    .source-list li { margin-bottom: 10px; font-size: 14px; }
+    #section-12 .section-inner { max-width: 720px; }
+    .verbatim-notice { background: var(--bg-card); border: 1px solid var(--accent2); border-left: 4px solid var(--accent2); border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 13px; color: var(--text-muted); margin-bottom: 36px; }
+    .verbatim-body { font-size: 16px; line-height: 1.85; }
+    .verbatim-body h3 { font-family: var(--font-display); font-size: 21px; color: var(--accent); margin: 44px 0 16px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .verbatim-body h3:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+    .verbatim-body p { margin: 0 0 14px; }
+    .verbatim-body .vb-quote { color: var(--accent2); font-style: italic; }
+    .verbatim-body .vb-divider { border: none; border-top: 1px dashed var(--border); margin: 36px 0; }
+    .verbatim-body table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; margin: 12px 0 24px; display: block; overflow-x: auto; }
+    .verbatim-body th, .verbatim-body td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    .verbatim-body th { background: var(--bg-card); }
+    .verbatim-body pre { line-height: 1.5; }
+    .verbatim-body ul { padding-left: 22px; }
+
+    /* ===== Accessibility ===== */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    }
+
+    /* ===== Print ===== */
+    @media print {
+      :root { --bg: #ffffff !important; --bg-card: #ffffff !important; --bg2: #ffffff !important; --text: #111111 !important; --text-muted: #444444 !important; --border: #cccccc !important; }
+      body { background: #ffffff !important; color: #111111 !important; }
+      #sidebar, #topbar, #reading-bar, #sb-overlay, .heart-closing-card, #back-to-top, #share-toast, #quiz-export-toolbar { display: none !important; }
+      #main { padding-top: 0 !important; margin-left: 0 !important; }
+      .tactic-body, .story-full { max-height: none !important; overflow: visible !important; padding-top: 8px !important; }
+      .hero::before, .hero::after { display: none; }
+    }
+
+    /* ===== Mobile (<= 860px) ===== */
+    @media (max-width: 860px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #topbar { left: 0; padding: 0 12px; }
+      #main { margin-left: 0; }
+      #menu-btn { display: flex; }
+      #sb-close { display: flex; }
+      .sb-link, #menu-btn, #sb-close, .quiz-option, .micro-check-option, .tactic-card, .story-toggle, .quiz-nav-btn, #theme-toggle, #search-input, .topbar-icon-btn { min-height: 44px; min-width: 44px; }
+      h1 { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+      h2 { font-size: clamp(1.3rem, 5vw, 1.7rem); }
+      body, p { font-size: 1rem; line-height: 1.6; }
+      #topbar-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
+      canvas { max-width: 100%; height: 260px !important; }
+      .quiz-options, .story-grid { grid-template-columns: 1fr; }
+      .section-inner { padding-left: 16px; padding-right: 16px; }
+      .quiz-card { padding: 22px 16px; }
+      .quiz-q-text { font-size: 19px; }
+      .stat-card { flex-direction: column; text-align: center; gap: 8px; }
+    }
+    @media (max-width: 480px) {
+      #topbar-title { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="reading-bar"><div id="reading-bar-fill"></div></div>
+  <div id="sb-overlay"></div>
+
+  <nav id="sidebar" aria-label="Guide sections">
+    <button id="sb-close" aria-label="Close sidebar menu">✕</button>
+    <div class="sb-header">
+      <div class="sb-emoji" aria-hidden="true">💻</div>
+      <div class="sb-title">Fundamental Programming Concepts</div>
+      <div class="sb-cat">Technical · Engineering</div>
+    </div>
+    <div id="sb-nav">
+      <div class="sb-group-label">Learn</div>
+      <a class="sb-link" href="#section-01" data-section-id="section-01"><span class="sb-icon">💡</span><span class="sb-link-text">Why It Matters</span><span class="sb-section-num">01</span><span class="sb-time" id="time-section-01"></span></a>
+      <a class="sb-link" href="#section-02" data-section-id="section-02"><span class="sb-icon">📖</span><span class="sb-link-text">What Is It?</span><span class="sb-section-num">02</span><span class="sb-time" id="time-section-02"></span></a>
+      <a class="sb-link" href="#section-03" data-section-id="section-03"><span class="sb-icon">🧩</span><span class="sb-link-text">The 15 Concepts</span><span class="sb-section-num">03</span><span class="sb-time" id="time-section-03"></span></a>
+      <a class="sb-link" href="#section-04" data-section-id="section-04"><span class="sb-icon">⚙️</span><span class="sb-link-text">How It Works</span><span class="sb-section-num">04</span><span class="sb-time" id="time-section-04"></span></a>
+      <div class="sb-group-label">Apply</div>
+      <a class="sb-link" href="#section-05" data-section-id="section-05"><span class="sb-icon">🛠️</span><span class="sb-link-text">Apply It Daily</span><span class="sb-section-num">05</span><span class="sb-time" id="time-section-05"></span></a>
+      <a class="sb-link" href="#section-06" data-section-id="section-06"><span class="sb-icon">⚖️</span><span class="sb-link-text">Benefits &amp; Costs</span><span class="sb-section-num">06</span><span class="sb-time" id="time-section-06"></span></a>
+      <a class="sb-link" href="#section-07" data-section-id="section-07"><span class="sb-icon">🎭</span><span class="sb-link-text">Narrative Examples</span><span class="sb-section-num">07</span><span class="sb-time" id="time-section-07"></span></a>
+      <a class="sb-link" href="#section-08" data-section-id="section-08"><span class="sb-icon">🌍</span><span class="sb-link-text">Real-World Examples</span><span class="sb-section-num">08</span><span class="sb-time" id="time-section-08"></span></a>
+      <div class="sb-group-label">Review</div>
+      <a class="sb-link" href="#section-09" data-section-id="section-09"><span class="sb-icon">✨</span><span class="sb-link-text">One Sentence</span><span class="sb-section-num">09</span><span class="sb-time" id="time-section-09"></span></a>
+      <a class="sb-link" href="#section-10" data-section-id="section-10"><span class="sb-icon">📝</span><span class="sb-link-text">Quiz</span><span class="sb-section-num">10</span><span class="sb-time" id="time-section-10"></span></a>
+      <a class="sb-link" href="#section-11" data-section-id="section-11"><span class="sb-icon">📚</span><span class="sb-link-text">Disclaimer &amp; Sources</span><span class="sb-section-num">11</span><span class="sb-time" id="time-section-11"></span></a>
+      <a class="sb-link" href="#section-12" data-section-id="section-12"><span class="sb-icon">📄</span><span class="sb-link-text">Original Text</span><span class="sb-section-num">12</span><span class="sb-time" id="time-section-12"></span></a>
+    </div>
+    <div class="sb-footer">Source: Fundamental_Programming_Concepts.txt</div>
+  </nav>
+
+  <header id="topbar">
+    <button id="menu-btn" aria-label="Open sidebar menu">☰</button>
+    <div id="topbar-title">Introduction</div>
+    <div class="topbar-actions">
+      <div id="search-wrap">
+        <input type="text" id="search-input" placeholder="Search guide…" autocomplete="off" aria-label="Search this guide" />
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <div id="search-results" role="listbox"></div>
+      </div>
+      <button id="heart-toggle-top" class="topbar-icon-btn heart-btn" aria-label="Heart this guide" aria-pressed="false" title="Heart this guide">
+        <svg class="heart-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.3-8.1C.6 9.9 1.8 6 5.1 5c2-.6 3.9.2 5 1.8L12 8.5l1.9-1.7c1.1-1.6 3-2.4 5-1.8 3.3 1 4.5 4.9 2.4 7.9C18.7 16.65 12 21 12 21Z"/></svg>
+        <span class="heart-label">Heart</span>
+      </button>
+      <button id="theme-toggle" aria-label="Switch between light and dark mode" aria-pressed="false">
+        <svg class="icon-sun" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+        <svg class="icon-moon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <div id="topbar-more-wrap">
+        <button id="topbar-more-btn" class="topbar-icon-btn" aria-label="More actions" aria-haspopup="true" aria-expanded="false" title="More">
+          <span aria-hidden="true">⋯</span>
+        </button>
+        <div id="topbar-more-menu">
+          <button id="listen-toggle" class="topbar-icon-btn" aria-label="Listen to this guide aloud" aria-pressed="false" title="Listen aloud">
+            <span class="listen-icon">🔊</span>
+            <span class="listen-label">Listen</span>
+          </button>
+          <button id="print-pdf-btn" class="topbar-icon-btn" aria-label="Print or save this guide as a PDF" title="Print / Save as PDF">
+            <span aria-hidden="true">🖨️</span>
+            <span class="print-label">Print</span>
+          </button>
+          <button id="share-btn" class="topbar-icon-btn" aria-label="Share this guide" title="Share">
+            <span aria-hidden="true">🔗</span>
+            <span class="share-label">Share</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div id="share-toast" class="share-toast" role="status" aria-live="polite"></div>
+
+  <main id="main">
+    <header class="hero" id="hero">
+      <div class="hero-inner">
+        <div class="hero-eyebrow">INTERACTIVE GUIDE</div>
+        <h1 class="hero-title">Fundamental Programming Concepts</h1>
+        <p class="hero-tagline" id="hero-tagline">The 15 building blocks behind every program, explained in plain words.</p>
+        <div class="hero-meta"><span class="read-time-pill" id="total-read-time">⏱ Calculating...</span></div>
+        <p class="hero-intro">Python, AutoLISP, PowerShell, JavaScript: every language is built from the same few ideas. Learn those ideas once, and new languages stop feeling new. This guide walks through all 15, in a smart learning order, with real stories and a quiz to test yourself.</p>
+      </div>
+    </header>
+
+    <div id="pretest" class="pretest-card">
+      <p class="micro-check-label">Quick gut-check</p>
+      <p class="pretest-note">No pressure. Just a quick starting point.</p>
+      <div id="pretest-body"></div>
+    </div>
+
+    <!-- ============ SECTION 01 ============ -->
+    <section id="section-01" aria-labelledby="s01-h">
+      <div class="section-inner">
+        <div class="section-label">Section 01</div>
+        <h2 id="s01-h">Why This Matters</h2>
+
+        <p>Most people start programming the hard way. They memorize commands, copy a script from the internet, and hope it runs. When it works, they feel great. When it breaks, they feel lost. This is where most beginners get stuck, and it is not their fault. Nobody told them what the pieces are.</p>
+
+        <p>Think about cooking. A recipe tells you what to do for one dish. But a cook who understands techniques can make any dish. They know what sautéing does. They know why you simmer a sauce. Programming has the same two levels. Commands are the recipe. The building blocks are the techniques.</p>
+
+        <p>Here is the cost of skipping the techniques. You can paste code that works today, but you cannot change it tomorrow. You see an error message and you have no idea where to look. You ask for help and you cannot explain what you need. Every new tool feels like starting from zero.</p>
+
+        <p>The good news is that the list of techniques is short. Almost every programming language uses the same fundamental concepts. They tell a computer what to do, when to do it, how many times to do it, and how to handle information. That is the whole job, in one sentence.</p>
+
+        <blockquote class="pull-quote">Languages change from year to year. The building blocks do not.</blockquote>
+
+        <p>Let us make this concrete. Imagine you need a small program that checks employee attendance. Someone who knows only commands will copy a snippet for one employee. Then they will copy it again for the second. And again for the third. By the tenth employee, the file is a mess and one small change means ten edits.</p>
+
+        <p>Someone who knows the building blocks does it differently. They store the names in a list. They write the attendance check once, as a function. They use a loop to run it for everybody. The program is shorter, cleaner, and easy to change. Same problem, different level of understanding.</p>
+
+        <div class="stat-card" data-source="Fundamental_Programming_Concepts.txt">
+          <div class="stat-num" aria-hidden="true">15</div>
+          <div class="stat-text">building blocks show up in almost every programming language. Learn these 15 and you can read the logic of code you have never seen before.</div>
+        </div>
+
+        <p>This matters even if you never plan to become a full-time developer. Today, many people write small scripts to save time. They automate a report, clean up a spreadsheet, or rename a hundred files. These jobs are all made from the same few ideas. The person who knows them finishes in an hour. The person who does not may give up after a day.</p>
+
+        <p>It also matters in the age of AI tools. An assistant can write code for you in seconds. But you are still the one who must check it. If you do not know what a loop or a condition is, you cannot tell a good answer from a wrong one. You cannot ask a sharper follow-up question. The assistant becomes a magic box, and magic boxes are risky when real work depends on them.</p>
+
+        <p>There is a quieter benefit too. When you understand the parts, new languages stop being scary. Python, AutoLISP, PowerShell, and JavaScript look different on the surface. Underneath, each one has variables, conditions, loops, and functions. Only the spelling changes. It is like learning to drive. Once you can drive one car, a different car takes an afternoon.</p>
+
+        <p>Now picture the opposite. A beginner copies a loop from a forum. It runs, but it never stops. The beginner does not know what a loop is, so they do not know that something must end it. They close the window, restart the computer, and try again. This is not a lack of talent. It is a missing building block.</p>
+
+        <p>That is why this guide covers all 15 concepts, one by one. You will see what each one is, why it exists, and how to use it. You will also see how they work together, how to practice them every day, and how real teams won or lost because of them. Nothing here needs special math. You only need patience and a few simple pictures in your head.</p>
+
+        <blockquote class="pull-quote">You do not need to memorize a language. You need to understand what a program is made of.</blockquote>
+
+        <p>A word about the order. The source notes behind this guide recommend a learning path: start with variables, then data types, then operators, conditions, loops, and functions. After that come lists, error handling, scope, object-oriented programming, modules, and events. We will follow that thinking. First the small pieces that hold and change information. Then the pieces that steer the program. Then the pieces that keep big programs organized.</p>
+
+        <p>You do not have to learn everything today. Read a little, try a small example, and come back. The quiz at the end will show you which ideas to revisit. For now, hold on to one picture: a program is just a careful set of instructions. Each building block is one kind of instruction. Let us start by defining the idea properly.</p>
+
+        <div class="micro-check" data-check-id="section-01-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">What is the main cost of learning only commands and skipping the building blocks?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-option-id="a">You cannot write any code at all</button>
+            <button class="micro-check-option" data-correct="true" data-option-id="b">You can paste code that works, but you cannot change it or fix it</button>
+            <button class="micro-check-option" data-option-id="c">Your programs will always run slower</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 02 ============ -->
+    <section id="section-02" aria-labelledby="s02-h">
+      <div class="section-inner">
+        <div class="section-label">Section 02</div>
+        <h2 id="s02-h">What Are Programming Concepts?</h2>
+
+        <p>If you do not agree on what a "fundamental concept" is, the rest of the guide will feel fuzzy. So let us define it in layers, from the simple surface to the deeper idea. Then we will clear up a common mistake.</p>
+
+        <p><strong>Layer one, the surface.</strong> A programming concept is an idea that almost every programming language uses. It is not tied to one language. Variables exist in Python. They exist in AutoLISP. They exist in JavaScript. The spelling differs, but the idea is the same.</p>
+
+        <p><strong>Layer two, the purpose.</strong> These ideas are the building blocks of every program. They tell a computer what to do, when to do it, how many times to do it, and how to handle information. Notice the four questions inside that sentence. What to do. When to do it. How many times. How to handle information. Every concept answers one of them.</p>
+
+        <p><strong>Layer three, the picture.</strong> Think of a kitchen in a busy restaurant. The ingredients are the information. The recipe is the program. The chef decides what to cook (conditions). The chef repeats steps for every plate (loops). A written procedure for sauce is reused all night (functions). A bell rings when an order arrives (events). If something burns, the chef reacts (error handling). Each kitchen job matches one concept.</p>
+
+        <p>The source notes for this guide list 15 concepts in total. Here they are, grouped by the job they do. The grouping is ours, made to help you remember. The 15 concepts themselves come straight from the notes.</p>
+
+        <div class="chart-wrap">
+          <canvas id="chart-concepts" data-source="Fundamental_Programming_Concepts.txt (15-concept list; grouping by this guide)" role="img" aria-label="Doughnut chart: of the 15 concepts, 5 store and describe data, 3 act and decide, 4 organize and reuse code, and 3 connect and protect."></canvas>
+        </div>
+        <p class="chart-caption">The 15 concepts, grouped by job. Store and describe data: 5. Act and decide: 3. Organize and reuse code: 4. Connect and protect: 3.</p>
+
+        <p>The notes also give a short way to remember what each idea is for. Read this list slowly. It is the whole guide in eight lines.</p>
+
+        <ul class="def-list">
+          <li><strong>Variables</strong> remember information.</li>
+          <li><strong>Operators</strong> manipulate information.</li>
+          <li><strong>Conditions</strong> make decisions.</li>
+          <li><strong>Loops</strong> repeat instructions.</li>
+          <li><strong>Functions</strong> reuse instructions.</li>
+          <li><strong>Data structures</strong> organize information.</li>
+          <li><strong>Events</strong> respond to actions.</li>
+          <li><strong>Error handling</strong> handles problems.</li>
+        </ul>
+
+        <p>Notice that "data structures" in that list covers lists and objects. In the full table of 15, those appear as Arrays / Lists and Objects / Structures. They are the tools that keep information organized, so many items can live together in one tidy place.</p>
+
+        <p><strong>Why these 15?</strong> Together they cover the whole life of information inside a program. Information is stored, in variables, data types, lists, and objects. It is changed and compared, by operators. The program chooses its path and repeats work, with conditions and loops. Code is packaged and shared, through functions, classes, modules, and comments. Finally, the program talks to the outside world and survives surprises, through input and output, error handling, and events. Scope sits quietly in the background and decides who may touch what.</p>
+
+        <p>You may notice that some concepts are small and some are big. A variable takes a minute to learn. Object-oriented programming can take weeks. That is normal. Size does not decide importance. A tiny idea like a comment can save a team a full day of confusion. A big idea like a class is only useful once the small ones feel natural.</p>
+
+        <div class="callout">
+          <p><strong>What people get wrong.</strong> Many beginners think programming means knowing a language, such as Python. A language is only the spelling. The concepts are the meaning. If you know the meaning, you can learn any spelling. If you only know the spelling, you are stuck when the language changes.</p>
+          <p style="margin-bottom:0">Another common mistake is thinking you must master one concept before touching the next. In practice, they overlap. A small program uses five or six at once. You learn them in order, but you use them together.</p>
+        </div>
+
+        <p>One more layer deserves its own note: operators. They are worth studying separately because they appear inside conditions, calculations, and loops. If conditions are the doors of a program, operators are the keys. You will meet the full operator table in Section 03.</p>
+
+        <p>Finally, keep this simple test in mind. When you meet a new piece of code, ask four questions. What information is stored here? What decision is made? What is repeated? What is reused? If you can answer those, you understand the code, even in a language you have never studied. That habit is the real skill this guide wants to build.</p>
+
+        <div class="micro-check" data-check-id="section-02-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">Which pairing of idea and job is correct?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-option-id="a">Variables repeat instructions; loops store values</button>
+            <button class="micro-check-option" data-option-id="b">Variables make decisions; operators handle errors</button>
+            <button class="micro-check-option" data-correct="true" data-option-id="c">Variables remember information; operators manipulate it</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 03 ============ -->
+    <section id="section-03" aria-labelledby="s03-h">
+      <div class="section-inner">
+        <div class="section-label">Section 03</div>
+        <h2 id="s03-h">The 15 Core Concepts</h2>
+
+        <p>This is the heart of the guide. If you skip everything else, do not skip this. Each concept below has a name, a short definition, a real example, a second example, and a warning about what goes wrong without it. Without a clear map, you will mix these ideas up. With it, you will start seeing them everywhere.</p>
+
+        <p>Tap a tile to open it. Code samples use Python, the same style as the source notes. A few tiles also show the same idea in AutoLISP, since that language uses the same blocks. The concepts are listed in the order of the source table.</p>
+
+        <div class="tactic-card" id="comp-variables" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 01</span>
+            <h3>Variables</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>A program that cannot remember is useless. The moment it learns a value, it would forget it. Every other concept depends on having a place to keep information.</p>
+            <p><strong class="lbl">What it is</strong><br>A variable stores information or values. Think of a labeled box. The label is the name, and the content is the value. You choose the name, and the value can change later.</p>
+            <pre><code>age = 25
+name = "John"
+hours = 9
+
+; the same idea in AutoLISP
+(setq age 25)</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Pick names that say what is inside. <code>hours_worked</code> is clear. <code>x</code> is a puzzle. Create the variable before you use it, and give it a starting value.</p>
+            <p><strong class="lbl">Second example</strong><br>A payroll script keeps <code>hourly_rate = 350</code> in one place and uses it everywhere. When the rate changes, you edit one line and every result updates.</p>
+            <p><strong class="lbl">Without it</strong><br>Numbers get typed again and again across the file. One small change means a hunt through every line, and you will surely miss one.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-data-types" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 02</span>
+            <h3>Data Types</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>The computer must know what kind of information it is holding. The text "25" and the number 25 look the same to your eyes, but they behave very differently.</p>
+            <p><strong class="lbl">What it is</strong><br>A data type defines the kind of information. The common ones are Integer (whole numbers), String (text), and Boolean (true or false). Many languages also have decimals, often called floats.</p>
+            <pre><code>age = 25          # integer
+name = "John"     # string
+is_late = False   # boolean
+
+25 + 5      # 30
+"25" + "5"  # "255" (text glued together)</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Before doing math, ask what type you have. Convert when needed, for example <code>int("25")</code> turns text into a whole number.</p>
+            <p><strong class="lbl">Second example</strong><br>When a person types a value into a form, it usually arrives as text. If you add it to another number without converting, you get a joined string or an error.</p>
+            <p><strong class="lbl">Without it</strong><br>You get answers that look right but are wrong, such as "255" instead of 30. These bugs are quiet, which makes them dangerous. Section 08 shows how a type problem helped destroy a rocket.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-operators" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 03</span>
+            <h3>Operators</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Storing values is only half the job. You also need to calculate with them and compare them. Operators are the symbols that do this work, and they appear inside conditions, calculations, and loops.</p>
+            <p><strong class="lbl">What it is</strong><br>An operator performs calculations or comparisons on values. Here are the eight common categories from the source notes.</p>
+            <table>
+              <thead><tr><th>Category</th><th>Operators</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td>Arithmetic</td><td>+ - * / %</td><td>Mathematical calculations</td></tr>
+                <tr><td>Comparison</td><td>== != &gt; &lt; &gt;= &lt;=</td><td>Compare values</td></tr>
+                <tr><td>Logical</td><td>AND OR NOT</td><td>Combine or reverse conditions</td></tr>
+                <tr><td>Assignment</td><td>= += -= *= /=</td><td>Assign or update values</td></tr>
+                <tr><td>Increment / Decrement</td><td>++ --</td><td>Increase or decrease values</td></tr>
+                <tr><td>Bitwise</td><td>&amp; | ^ ~</td><td>Perform bit-level operations</td></tr>
+                <tr><td>Membership</td><td>in, not in</td><td>Check whether an item exists in a collection</td></tr>
+                <tr><td>Identity</td><td>is, is not</td><td>Check whether two references point to the same object</td></tr>
+              </tbody>
+            </table>
+            <p><strong class="lbl">How to use it</strong><br>Start with arithmetic and comparison. They cover most daily work. Remember that <code>=</code> stores a value, while <code>==</code> asks a question.</p>
+            <p><strong class="lbl">Second example</strong><br><code>hours &gt;= 8</code> compares working hours and gives true or false. <code>total += hours</code> adds to a running total.</p>
+            <p><strong class="lbl">Without it</strong><br>A program could hold data but never calculate or compare. Mixing up <code>=</code> and <code>==</code> is one of the most common beginner bugs.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-conditions" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 04</span>
+            <h3>Conditions</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Real life has branches. If it rains, bring an umbrella. Programs need the same power to choose. Without it, a program does the exact same thing every time.</p>
+            <p><strong class="lbl">What it is</strong><br>A condition makes a decision based on criteria. It checks whether something is true. If it is, one set of instructions runs. If not, another set may run.</p>
+            <pre><code>if hours &gt; 8:
+    print("Overtime")
+
+; the same idea in AutoLISP
+(if (&gt; hours 8) (princ "Overtime"))</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Say the rule in plain words first: "If hours are more than eight, mark overtime." Then translate it. Add <code>else</code> for the other case.</p>
+            <p><strong class="lbl">Second example</strong><br>A login screen checks <code>if password == saved_password</code>. One branch opens the app. The other shows an error message.</p>
+            <p><strong class="lbl">Without it</strong><br>Every employee gets the same result. The program cannot react to a late worker, an empty file, or a wrong password.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-loops" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 05</span>
+            <h3>Loops</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Computers are great at boring, repeated work. A loop lets you write an instruction once and run it as many times as you need.</p>
+            <p><strong class="lbl">What it is</strong><br>A loop repeats instructions. A <code>for</code> loop goes through a known set of items. A <code>while</code> loop keeps going as long as a condition stays true.</p>
+            <pre><code>for employee in employees:
+    print(employee)
+
+while hours &lt; 8:
+    hours += 1</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Use <code>for</code> when you know what to walk through, such as a list. Use <code>while</code> when you wait for something to change. Always make sure the <code>while</code> condition can become false.</p>
+            <p><strong class="lbl">Second example</strong><br>A script renames 500 files. The loop picks up each file, builds the new name, and renames it. The same three lines run 500 times.</p>
+            <p><strong class="lbl">Without it</strong><br>You copy and paste the same lines hundreds of times. And a <code>while</code> loop with no way to stop will freeze your program forever.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-functions" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 06</span>
+            <h3>Functions</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Programs grow. If every step lives in one long block, nobody can read it. Functions let you give a group of steps a name and reuse it.</p>
+            <p><strong class="lbl">What it is</strong><br>A function groups reusable instructions. It can take inputs, called parameters, and send back a result, called a return value. Think of a kitchen appliance: put things in, get a result out.</p>
+            <pre><code>def check_attendance(hours):
+    return hours &gt;= 8
+
+check_attendance(9)   # True
+
+; the same idea in AutoLISP
+(defun check_attendance (hours) (&gt;= hours 8))</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>When you copy the same lines for the second time, stop. Turn them into a function. Give it a name that says what it does, like <code>calculate_total()</code>.</p>
+            <p><strong class="lbl">Second example</strong><br>A report tool calls <code>format_date()</code> in twelve places. When the date style changes, you fix one function instead of twelve lines.</p>
+            <p><strong class="lbl">Without it</strong><br>Code gets copied everywhere. A bug fixed in one copy stays alive in the others.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-arrays-lists" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 07</span>
+            <h3>Arrays / Lists</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Real data comes in groups: many employees, many prices, many files. Creating a separate variable for each one does not scale.</p>
+            <p><strong class="lbl">What it is</strong><br>An array or list stores multiple values in one collection. Each item has a position, called an index, and in most languages counting starts at zero.</p>
+            <pre><code>numbers = [10, 20, 30]
+numbers[0]            # 10, the first item
+employees = ["John", "Maria", "Ken"]
+len(employees)        # 3</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Keep related values of the same kind together. Add with <code>append</code>. Walk through the list with a loop. Check the length before you ask for an index.</p>
+            <p><strong class="lbl">Second example</strong><br>A shop stores all item prices in one list and adds them in a loop to get the bill total.</p>
+            <p><strong class="lbl">Without it</strong><br>You end up with <code>employee1</code>, <code>employee2</code>, <code>employee3</code> and no way to loop through them. Asking for an index that does not exist causes errors.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-objects-structures" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 08</span>
+            <h3>Objects / Structures</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Some facts belong together. An employee has a name, an ID, and a salary. If they live in three separate places, they can easily drift apart.</p>
+            <p><strong class="lbl">What it is</strong><br>An object or structure groups related information together under one name, like a form with several fields.</p>
+            <pre><code>employee = {
+    "name": "John",
+    "id": 101,
+    "salary": 25000
+}
+employee["name"]   # John</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Ask: "Which values describe one thing?" Put those in one record. Read each field by its label, not by position.</p>
+            <p><strong class="lbl">Second example</strong><br>A list of records, such as many employees, each with the same fields, is how most real data looks. You loop through the list and read each record's fields.</p>
+            <p><strong class="lbl">Without it</strong><br>Parallel lists of names, IDs, and salaries break when one list is sorted and the others are not. The wrong salary lands on the wrong person.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-input-output" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 09</span>
+            <h3>Input / Output</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>A program that cannot receive information or show results is a closed room. Input and output are its doors to the world.</p>
+            <p><strong class="lbl">What it is</strong><br>Input receives information, such as reading a file or a typed answer. Output produces results, such as displaying a message or writing a file.</p>
+            <pre><code>hours = input("Hours worked: ")   # input
+print("Attendance checked!")      # output
+
+with open("hours.txt") as f:      # read a file
+    data = f.read()</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Treat anything coming in as untrusted. Check it, convert it, then use it. Make outputs clear so the reader knows what happened.</p>
+            <p><strong class="lbl">Second example</strong><br>A script reads a CSV file of hours, calculates totals, and writes a new report file. Input, work, then output.</p>
+            <p><strong class="lbl">Without it</strong><br>The program may be perfect but nobody can use it. Missing output also hides failures, because nothing tells you it stopped.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-error-handling" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 10</span>
+            <h3>Error Handling</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Things go wrong: a file is missing, a user types a letter instead of a number, a network drops. A program that assumes perfect conditions will crash at the worst time.</p>
+            <p><strong class="lbl">What it is</strong><br>Error handling deals with unexpected situations. You try something risky, and you say what to do if it fails. In Python the words are <code>try</code> and <code>except</code>. Other languages use <code>try</code> and <code>catch</code>.</p>
+            <pre><code>try:
+    hours = int(input("Hours: "))
+except ValueError:
+    print("Please type a number.")</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Prevent what you can with checks. Catch the rest. Give a helpful message, and never hide an error silently.</p>
+            <p><strong class="lbl">Second example</strong><br>A tool opens a data file. If the file is missing, it says "File not found, please check the path" instead of closing without a word.</p>
+            <p><strong class="lbl">Without it</strong><br>One bad input stops everything. The user sees a wall of red text and loses their work.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-comments" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 11</span>
+            <h3>Comments</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>You will forget your own code in a month. Someone else will read it too. Comments are notes that save everyone time.</p>
+            <p><strong class="lbl">What it is</strong><br>Comments explain what the code does. The computer ignores them. The symbol depends on the language: <code>#</code> in Python, <code>//</code> in JavaScript, and <code>;</code> in AutoLISP.</p>
+            <pre><code># Calculate total pay for one employee
+total = hours * rate
+
+// Calculate total   (JavaScript style)</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Explain why, not only what. <code>hours * rate</code> already says what it does. A note about why overtime starts after eight hours is far more useful.</p>
+            <p><strong class="lbl">Second example</strong><br>A short note at the top of a script says what it does, what input it needs, and what it produces.</p>
+            <p><strong class="lbl">Without it</strong><br>Old code becomes a puzzle. Fixes take longer, and people are afraid to touch it.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-scope" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 12</span>
+            <h3>Scope</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>In a big program, many parts use similar names. Without rules about who can see what, they step on each other.</p>
+            <p><strong class="lbl">What it is</strong><br>Scope determines where a variable can be accessed. A local variable lives inside one function only. A global variable can be seen everywhere. Think of a note on your own desk versus a notice on the office wall.</p>
+            <pre><code>total = 0               # global
+
+def add_bonus(hours):
+    bonus = 1           # local, only exists here
+    return hours + bonus</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Prefer local variables. Pass values in as parameters and send results out with <code>return</code>. Use globals only for things that truly must be shared.</p>
+            <p><strong class="lbl">Second example</strong><br>Two functions both use a variable named <code>count</code>. Because each is local, they never disturb each other.</p>
+            <p><strong class="lbl">Without it</strong><br>One function changes a shared value by accident and another breaks, far away from the real cause. These are some of the hardest bugs to find.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-classes-oop" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 13</span>
+            <h3>Classes / OOP</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>As programs get large, loose variables and functions become hard to manage. Object-oriented programming (OOP) keeps data and the actions on that data together.</p>
+            <p><strong class="lbl">What it is</strong><br>A class is a blueprint. An object is a thing built from it, like houses built from one plan. Classes organize code using objects and blueprints.</p>
+            <pre><code>class Employee:
+    def __init__(self, name, hours):
+        self.name = name
+        self.hours = hours
+
+    def is_on_time(self):
+        return self.hours &gt;= 8
+
+john = Employee("John", 9)
+john.is_on_time()   # True</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Learn it after the basics. When you notice a group of values and functions that always travel together, that is a class waiting to be written.</p>
+            <p><strong class="lbl">Second example</strong><br>A drawing tool has a <code>Pipe</code> class and a <code>Valve</code> class. Each knows its own size and how to describe itself.</p>
+            <p><strong class="lbl">Without it</strong><br>Large programs turn into a tangle of loose parts. You can still build small tools without OOP, which is why it comes late in the learning order.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-modules-libraries" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 14</span>
+            <h3>Modules / Libraries</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Someone has already solved most common problems. Writing everything yourself is slow and risky.</p>
+            <p><strong class="lbl">What it is</strong><br>A module or library is code written elsewhere that you reuse. You bring it in with an import and use what it offers.</p>
+            <pre><code>import math
+math.sqrt(16)   # 4.0
+
+import csv      # read and write CSV files</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Before writing something new, ask whether a library already does it. Read its documentation and try one small example first.</p>
+            <p><strong class="lbl">Second example</strong><br>You split your own big script into two files, one for calculations and one for reports, and import the first into the second.</p>
+            <p><strong class="lbl">Without it</strong><br>You reinvent the wheel, with new bugs. Section 08 shows how one pioneer built the first library of reusable code.</p>
+          </div>
+        </div>
+
+        <div class="tactic-card" id="comp-events" tabindex="0" role="button" aria-expanded="false">
+          <div class="tactic-header">
+            <span class="tactic-tag">Concept 15</span>
+            <h3>Events</h3>
+            <span class="tactic-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="tactic-body">
+            <p><strong class="lbl">Why it matters</strong><br>Many programs do not run top to bottom and stop. They wait for the user. Events let them respond when something happens.</p>
+            <p><strong class="lbl">What it is</strong><br>An event executes instructions when something happens, such as a button click or a key press. Think of a doorbell. The bell rings, and then you react.</p>
+            <pre><code>// JavaScript
+button.addEventListener("click", showReport);</code></pre>
+            <p><strong class="lbl">How to use it</strong><br>Write a function for what should happen. Then connect it to the event. Keep each handler small and focused.</p>
+            <p><strong class="lbl">Second example</strong><br>In a desktop tool, pressing Enter in a search box runs the search function, with no extra button needed.</p>
+            <p><strong class="lbl">Without it</strong><br>The program must keep asking "did anything happen yet?" in a loop, or it cannot react to the user at all.</p>
+          </div>
+        </div>
+
+        <div class="micro-check" data-check-id="section-03-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">You have a list of employees. Which concept lets you run the same check on each one?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-correct="true" data-option-id="a">A loop</button>
+            <button class="micro-check-option" data-option-id="b">A comment</button>
+            <button class="micro-check-option" data-option-id="c">A global variable</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 04 ============ -->
+    <section id="section-04" aria-labelledby="s04-h">
+      <div class="section-inner">
+        <div class="section-label">Section 04</div>
+        <h2 id="s04-h">How the Concepts Work Together</h2>
+
+        <p>Knowing the parts is not enough. Most bugs do not hide inside one concept. They hide in the connections between them. So this section follows one small program, the employee attendance checker from the source notes, and shows what causes what.</p>
+
+        <p>Read the cards from top to bottom. Each one leads to the next. The arrows show the cause and effect.</p>
+
+        <div class="flow">
+          <div class="concept-card">
+            <div class="concept-num">Step 1 · Information arrives and is stored</div>
+            <h3>Input fills variables</h3>
+            <p>The checker starts by reading hours from a file or a form. That is input. The values are stored in variables, such as <code>name = "John"</code> and <code>hours = 9</code>. Every value arrives as some kind of data, and what it looks like decides everything that follows.</p>
+            <p>Here is the first cause and effect. If the hours arrive as text, the next step will behave strangely. So we convert text to a number as soon as it comes in. Input, variables, and data types are one chain, not three separate topics.</p>
+          </div>
+          <div class="flow-arrow">↓ because the type is now known</div>
+          <div class="concept-card">
+            <div class="concept-num">Step 2 · Operators work on typed values</div>
+            <h3>Types decide what operators can do</h3>
+            <p>Operators calculate and compare. You can add two numbers, but adding a number to a word is a problem. Comparing <code>hours &gt;= 8</code> only makes sense when both sides are numbers. The data type is the rulebook that tells the operator what it is allowed to do.</p>
+            <p>The effect is a new piece of information: true or false. That Boolean value is the bridge to the next step. A comparison produces an answer, and the answer is what the program will use to decide.</p>
+          </div>
+          <div class="flow-arrow">↓ so the program has an answer to act on</div>
+          <div class="concept-card">
+            <div class="concept-num">Step 3 · The program chooses and repeats</div>
+            <h3>Conditions steer, loops repeat</h3>
+            <p>A condition reads the true or false result. <code>if hours &gt; 8</code> decides whether to print "Overtime". One employee is easy. But the company has many, so a loop walks through the list and sends each employee through the same decision.</p>
+            <p>Notice how a list and a loop are partners. The list holds the group. The loop visits each member. The condition inside the loop makes the choice. Take away any one of them and the program no longer works.</p>
+          </div>
+          <div class="flow-arrow">↓ so the steps need to be tidy and reusable</div>
+          <div class="concept-card">
+            <div class="concept-num">Step 4 · Code is packaged and protected</div>
+            <h3>Functions and scope keep pieces apart</h3>
+            <p>The decision is now wrapped in a function, <code>check_attendance(hours)</code>. The function takes in hours and returns a result. Because its variables are local, it cannot accidentally change values somewhere else in the program.</p>
+            <p>That is the effect of scope. It builds walls around each function. A bug stays in the room where it started. Without these walls, a change in one place may break something in another, and you will not know why.</p>
+          </div>
+          <div class="flow-arrow">↓ but the real world is messy</div>
+          <div class="concept-card">
+            <div class="concept-num">Step 5 · Surprises happen</div>
+            <h3>Errors and events interrupt the plan</h3>
+            <p>What if the file is missing? What if someone types "nine" instead of 9? Error handling catches these surprises and gives a clean message, so the program does not collapse. Events work in a similar spirit. They let the program react when a user clicks a button, instead of running blindly from start to finish.</p>
+            <p>Both ideas accept a simple truth: the outside world is not predictable. A strong program expects interruptions. It does not assume a perfect day.</p>
+          </div>
+          <div class="flow-arrow">↓ and as the program grows</div>
+          <div class="concept-card">
+            <div class="concept-num">Step 6 · Structure scales the program up</div>
+            <h3>Objects, classes, modules, and comments</h3>
+            <p>One day the checker needs to store name, ID, and salary for each person. An object keeps those fields together. A class then bundles the data and the checks that belong to an employee. Later you move shared code into a module, so other programs can import it.</p>
+            <p>Finally, comments explain why each decision was made. The cause is growth. The effect is a need for structure. These concepts do not add new power. They add order, which is what lets many people work on one program for years.</p>
+          </div>
+        </div>
+
+        <p style="margin-top:28px">Last, the output step displays the results, for example <code>print("Attendance checked!")</code>. Look back at the whole journey. Information came in and was stored with a type. It was compared and decided on. It was repeated for everyone and wrapped safely. It was protected from errors and shown to the reader. That is how almost every program you will ever see is built.</p>
+
+        <div class="micro-check" data-check-id="section-04-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">In the attendance example, what has to happen before the program can make a decision?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-option-id="a">A class must be created for the whole company</button>
+            <button class="micro-check-option" data-option-id="b">A loop must run forever</button>
+            <button class="micro-check-option" data-correct="true" data-option-id="c">Information comes in, is stored, and has a known type</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 05 ============ -->
+    <section id="section-05" aria-labelledby="s05-h">
+      <div class="section-inner">
+        <div class="section-label">Section 05</div>
+        <h2 id="s05-h">How to Apply It Daily</h2>
+
+        <p>Reading about concepts does not make them stick. Using them does. This section turns the framework into six small habits you can practice in any language, on any small task. Each habit tells you what to do, shows a worked example, warns you about a common mistake, and gives you something to try today. Tap a tag to jump back to the concept behind the action.</p>
+
+        <div class="action-grid">
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">🏷️</span>
+            <h3>Name your data before you touch it</h3>
+            <p>Before writing any logic, list the pieces of information you need and give each one a clear name. Decide what type each is: a number, text, or true/false. This takes two minutes and prevents hours of confusion later.</p>
+            <div class="action-note"><b>Worked example</b>For an attendance tool: <code>employee_name</code> (text), <code>hours_worked</code> (number), <code>is_late</code> (true/false).</div>
+            <div class="action-note"><b>Common mistake</b>Using names like <code>x</code> and <code>temp</code>. Next week you will not remember what they hold.</div>
+            <div class="action-note try"><b>Try it today</b>Open a script you wrote. Rename three vague variables to names that explain themselves.</div>
+            <a class="applies-to-tag" href="#comp-variables">↳ Applies: Variables</a>
+          </div>
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">🔀</span>
+            <h3>Say the decision in plain words first</h3>
+            <p>When the program must choose, write the rule as a normal sentence before any code. Then translate it. If you cannot say the rule clearly, the code will not be clear either.</p>
+            <div class="action-note"><b>Worked example</b>Sentence: "If the worker is over eight hours, mark overtime." Code: <code>if hours &gt; 8: print("Overtime")</code>.</div>
+            <div class="action-note"><b>Common mistake</b>Writing the check without covering the other case. Ask what should happen when the answer is no.</div>
+            <div class="action-note try"><b>Try it today</b>Write three rules from your own work as "If … then …" sentences. Turn one into code.</div>
+            <a class="applies-to-tag" href="#comp-conditions">↳ Applies: Conditions</a>
+          </div>
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">🔁</span>
+            <h3>Do it by hand once, then loop it</h3>
+            <p>Solve the task for a single item first. Make that one case work. Only then wrap it in a loop for the whole group. This way, if something breaks, you know whether the problem is the step or the repetition.</p>
+            <div class="action-note"><b>Worked example</b>First print one name, <code>print(employees[0])</code>. Once that works, use <code>for employee in employees: print(employee)</code>.</div>
+            <div class="action-note"><b>Common mistake</b>Writing a <code>while</code> loop with nothing that ever makes it stop. Always know what ends the loop.</div>
+            <div class="action-note try"><b>Try it today</b>Pick a repeated chore. Write the steps for one item, then let a loop do the rest.</div>
+            <a class="applies-to-tag" href="#comp-loops">↳ Applies: Loops</a>
+          </div>
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">📦</span>
+            <h3>Turn the second copy into a function</h3>
+            <p>The first time you write something, just write it. The second time you need the same lines, stop and make a function. Give it a name that says what it does, pass in what changes, and return the result.</p>
+            <div class="action-note"><b>Worked example</b><code>def check_attendance(hours): return hours &gt;= 8</code>. Now every part of the program calls one trusted check.</div>
+            <div class="action-note"><b>Common mistake</b>Making a function that does five jobs. One function should do one clear thing.</div>
+            <div class="action-note try"><b>Try it today</b>Find two places in your code with nearly the same lines. Merge them into one function.</div>
+            <a class="applies-to-tag" href="#comp-functions">↳ Applies: Functions</a>
+          </div>
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">🛡️</span>
+            <h3>Expect the input to be wrong</h3>
+            <p>Anything from outside your program, such as a typed answer or a file, can be missing or in the wrong shape. At each point where information comes in, check it or wrap it in <code>try</code> and <code>except</code>, and say what went wrong in plain language.</p>
+            <div class="action-note"><b>Worked example</b><code>try: hours = int(text)</code> then <code>except ValueError: print("Please type a number.")</code>.</div>
+            <div class="action-note"><b>Common mistake</b>Catching the error and doing nothing. Silence hides the problem and makes it harder to fix.</div>
+            <div class="action-note try"><b>Try it today</b>Type something silly into one of your tools, like letters in a number field. Does it fail kindly?</div>
+            <a class="applies-to-tag" href="#comp-error-handling">↳ Applies: Error Handling</a>
+          </div>
+
+          <div class="action-card">
+            <span class="action-icon" aria-hidden="true">✍️</span>
+            <h3>Write the why in a comment</h3>
+            <p>Code shows what happens. A comment explains why. Leave a short note wherever a reason is not obvious: a business rule, a strange workaround, or a number that came from somewhere.</p>
+            <div class="action-note"><b>Worked example</b><code># Overtime starts after 8 hours, per company policy</code>.</div>
+            <div class="action-note"><b>Common mistake</b>Repeating the code in words, such as "add 1 to count". Explain the reason instead.</div>
+            <div class="action-note try"><b>Try it today</b>Add one comment to your oldest script explaining a line that confused you when you reread it.</div>
+            <a class="applies-to-tag" href="#comp-comments">↳ Applies: Comments</a>
+          </div>
+
+        </div>
+
+        <p style="margin-top:28px"><strong>Your learning path.</strong> The source notes recommend an order for deep understanding and real applications: Variables, Data Types, Operators, Conditions, Loops, Functions, Arrays / Lists, Error Handling, Scope, OOP, Modules / Libraries, and finally Events. Each step answers one question. How is information stored? What kind is it? How are values changed? How does the program decide? How does it repeat? How do we reuse instructions? How do we handle groups of data? How do we handle failures? Who can see which variable? How do we organize large programs? How do we borrow code? How does the program respond to people? Spend a week or two on each, and the whole map will start to feel familiar.</p>
+
+        <p><strong>Keep the routine small.</strong> Fifteen minutes a day beats one long weekend. Pick one concept per week. Build a tiny tool that uses it, such as the attendance checker from the source notes. Each Friday, reread one old script and ask three questions. Are the names clear? Is anything copied twice? What happens if the input is wrong? Over a few months, these small checks turn into instinct, and the building blocks stop feeling like a list you memorized.</p>
+
+        <div class="micro-check" data-check-id="section-05-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">According to the daily habits, when should you turn repeated lines into a function?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-correct="true" data-option-id="a">The second time you need the same lines</button>
+            <button class="micro-check-option" data-option-id="b">Only after the program has crashed</button>
+            <button class="micro-check-option" data-option-id="c">Never; copying is faster</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 06 ============ -->
+    <section id="section-06" aria-labelledby="s06-h">
+      <div class="section-inner">
+        <div class="section-label">Section 06</div>
+        <h2 id="s06-h">Benefits &amp; Consequences</h2>
+
+        <p>Why bother with all of this? Because the results show up over months and years, not in one afternoon. Here are two paths. The left shows what tends to happen when you understand the building blocks. The right shows what tends to happen when you skip them. These are patterns, not promises, but they repeat often enough to take seriously.</p>
+
+        <div class="bc-grid">
+          <div class="bc-box benefit">
+            <h3>When you know the blocks</h3>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Changes stay small.</strong> A new rule means editing one function or one list, not hunting through a hundred lines. Your tools age well.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>New languages feel familiar.</strong> You see the variables, conditions, and loops under the new spelling, so each new tool takes days instead of months.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Bugs become solvable.</strong> You can ask which part failed: the input, the type, the decision, or the repeat. Narrowing it down is half the cure.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>You stay in charge of AI help.</strong> You can read generated code, spot a weak spot, and ask a sharper question, instead of trusting a black box.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Others can work with you.</strong> Clear names, comments, and functions let teammates read and extend your work, which makes you someone people want on the team.</div></div>
+          </div>
+
+          <div class="bc-box consequence">
+            <h3>When you skip them</h3>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Untouchable code piles up.</strong> Copy-pasted scripts grow until nobody dares change them, including you.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Bugs turn into mysteries.</strong> Without a mental map, you guess and retry. Hours disappear on problems that a clear picture would solve in minutes.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>You depend on whatever runs.</strong> If you cannot judge code, you must trust it blindly. That is risky when the work touches money, safety, or customers.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Every language starts from zero.</strong> Each new tool feels like a brand-new world, so learning stays slow and discouraging.</div></div>
+            <div class="bc-item"><span class="bc-dot"></span><div><strong>Fragile tools break at bad moments.</strong> Programs with no error handling fail in front of real users. Trust, once lost, is slow to win back.</div></div>
+          </div>
+        </div>
+
+        <p style="margin-top:24px">Look at what the two columns have in common. The benefits and the costs both grow slowly. A messy script does not hurt on day one. It hurts on day ninety, when the rules change and nobody remembers how it works. In the same way, a clean function does not feel special today. It pays off the first time you need to change it.</p>
+
+        <p>An honest note: knowing the building blocks does not make you perfect. You will still write bugs. The difference is how you meet them. With a clear mental map, a bug is a puzzle with known pieces. Without one, it is a fog. That change in feeling, from fear to curiosity, is the benefit most learners notice first.</p>
+
+        <div class="micro-check" data-check-id="section-06-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">Which is a likely long-term result of understanding the building blocks?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-option-id="a">You never see an error message again</button>
+            <button class="micro-check-option" data-correct="true" data-option-id="b">New languages feel familiar and changes stay small</button>
+            <button class="micro-check-option" data-option-id="c">Programs write themselves without your input</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 07 ============ -->
+    <section id="section-07" aria-labelledby="s07-h">
+      <div class="section-inner">
+        <div class="section-label">Section 07</div>
+        <h2 id="s07-h">Narrative Examples</h2>
+
+        <p>Ideas feel different when people use them. Below are three short scenes in three settings: an office, a small store, and a client demo. In each one, the same problem is handled in two ways. Watch what changes when the building blocks are used well.</p>
+
+        <div class="story-scene">
+          <h3 style="font-size:1.05rem; margin-bottom:6px;">Scene 1 — The Growing Team (HR Office)</h3>
+          <p class="scene-setup">Marissa from HR needs a small program that flags overtime. Her junior colleague Jun builds it. A week later, three new employees join.</p>
+          <div class="scene-block wrong">
+            <div class="scene-label wrong-label">🚫 The Wrong Way</div>
+            <p class="dialogue-line"><span class="speaker">Marissa:</span> "We have three new people. Can you add them?"</p>
+            <p class="dialogue-line"><span class="speaker">Jun:</span> "Sure. Give me a few minutes. I need to copy the overtime check for each name."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>Jun pastes the same five lines three more times, then edits each pasted copy by hand.</em></p>
+            <p class="dialogue-line"><span class="speaker">Marissa:</span> "Now the rule changed. Overtime starts at nine hours."</p>
+            <p class="dialogue-line"><span class="speaker">Jun:</span> "Oh no. I have to change it in every copy."</p>
+            <div class="scene-note"><strong>What went wrong:</strong> The rule lives in many places. One copy was missed, and one employee was marked wrongly for weeks.</div>
+          </div>
+          <div class="scene-block right">
+            <div class="scene-label right-label">✅ The Right Way</div>
+            <p class="dialogue-line"><span class="speaker">Marissa:</span> "We have three new people. Can you add them?"</p>
+            <p class="dialogue-line"><span class="speaker">Jun:</span> "Done in ten seconds. They are just three more names in the list."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>Jun adds three names to <code>employees</code>. A loop already checks everyone.</em></p>
+            <p class="dialogue-line"><span class="speaker">Marissa:</span> "Now the rule changed. Overtime starts at nine hours."</p>
+            <p class="dialogue-line"><span class="speaker">Jun:</span> "One edit. The check lives in a single function."</p>
+            <div class="scene-note"><strong>Why this works:</strong> The list holds the people, the loop visits each one, and the function holds the rule once. Growth and change cost almost nothing.
+              <div class="scene-tags"><a class="applies-to-tag" href="#comp-loops">↳ Loops</a><a class="applies-to-tag" href="#comp-functions">↳ Functions</a></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-scene">
+          <h3 style="font-size:1.05rem; margin-bottom:6px;">Scene 2 — Closing Time (Neighborhood Store)</h3>
+          <p class="scene-setup">Tita Linda runs a sari-sari store. Her nephew Paolo built her a small inventory program. At closing time she is tired and typing fast.</p>
+          <div class="scene-block wrong">
+            <div class="scene-label wrong-label">🚫 The Wrong Way</div>
+            <p class="dialogue-line"><span class="speaker">Tita Linda:</span> "Paolo, I typed 'ten' for the sardines and the whole screen turned red."</p>
+            <p class="dialogue-line"><span class="speaker">Paolo:</span> "It expects a number. It cannot turn the word 'ten' into 10."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>The program closes. Everything she typed tonight is gone.</em></p>
+            <p class="dialogue-line"><span class="speaker">Tita Linda:</span> "Then I will go back to my notebook."</p>
+            <div class="scene-note"><strong>What went wrong:</strong> The program assumed perfect typing. One bad input ended the whole session, and the user lost trust in the tool.</div>
+          </div>
+          <div class="scene-block right">
+            <div class="scene-label right-label">✅ The Right Way</div>
+            <p class="dialogue-line"><span class="speaker">Tita Linda:</span> "Paolo, I typed 'ten' for the sardines and something popped up."</p>
+            <p class="dialogue-line"><span class="speaker">Paolo:</span> "It says 'Please type a number, like 10.' Then it asks again."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>She types 10. The program carries on and keeps her work.</em></p>
+            <p class="dialogue-line"><span class="speaker">Tita Linda:</span> "Ay, nice. It did not scold me."</p>
+            <div class="scene-note"><strong>Why this works:</strong> Paolo converts the input to a number inside a <code>try</code> block and catches the failure. The message is kind and clear, and the session survives.
+              <div class="scene-tags"><a class="applies-to-tag" href="#comp-error-handling">↳ Error Handling</a><a class="applies-to-tag" href="#comp-data-types">↳ Data Types</a></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-scene">
+          <h3 style="font-size:1.05rem; margin-bottom:6px;">Scene 3 — The Double Discount (Client Demo)</h3>
+          <p class="scene-setup">Rhea is showing a client, Mr. Santos, a checkout page. Her teammate Carlo wrote the price code. A shared variable named <code>total</code> sits at the top of the file.</p>
+          <div class="scene-block wrong">
+            <div class="scene-label wrong-label">🚫 The Wrong Way</div>
+            <p class="dialogue-line"><span class="speaker">Mr. Santos:</span> "Your sample basket is 1,000 pesos with a 10% discount. Why does it show 810?"</p>
+            <p class="dialogue-line"><span class="speaker">Rhea:</span> "I... am not sure. It should be 900."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>Later, Carlo finds two functions that both change the shared global <code>total</code>. The discount ran twice.</em></p>
+            <p class="dialogue-line"><span class="speaker">Carlo:</span> "Each function quietly edited the same variable. I did not know the other one did too."</p>
+            <div class="scene-note"><strong>What went wrong:</strong> A global variable was changed from two places. The bug appeared in the demo, far away from its cause.</div>
+          </div>
+          <div class="scene-block right">
+            <div class="scene-label right-label">✅ The Right Way</div>
+            <p class="dialogue-line"><span class="speaker">Mr. Santos:</span> "Your sample basket is 1,000 pesos with a 10% discount. Why does it show 900?"</p>
+            <p class="dialogue-line"><span class="speaker">Rhea:</span> "Because that is exactly right. Ten percent off 1,000 is 900."</p>
+            <p class="dialogue-line" style="opacity:.75;"><em>Carlo's discount function takes the price as a parameter, works on a local copy, and returns the new price.</em></p>
+            <p class="dialogue-line"><span class="speaker">Carlo:</span> "Nothing else can change that number by accident."</p>
+            <div class="scene-note"><strong>Why this works:</strong> Local variables and returned values keep each function in its own room. Nothing outside can disturb the result.
+              <div class="scene-tags"><a class="applies-to-tag" href="#comp-scope">↳ Scope</a><a class="applies-to-tag" href="#comp-functions">↳ Functions</a></div>
+            </div>
+          </div>
+        </div>
+
+        <p>Put the three scenes side by side. In each one, the wrong way and the right way solve the same problem, with almost the same words. The only thing that changes is the move. Jun uses copies; then he uses a list, a loop, and a function. Paolo trusts the typing; then he expects mistakes. Carlo shares one variable everywhere; then he keeps each value in its own room. None of these moves needs advanced skill. They need a clear picture of the building blocks and the habit of using them.</p>
+
+        <div class="micro-check" data-check-id="section-07-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">In the Double Discount scene, what caused the wrong price?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-option-id="a">A loop that never ended</button>
+            <button class="micro-check-option" data-option-id="b">A missing comment</button>
+            <button class="micro-check-option" data-correct="true" data-option-id="c">Two functions changing the same global variable</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 08 ============ -->
+    <section id="section-08" aria-labelledby="s08-h">
+      <div class="section-inner">
+        <div class="section-label">Section 08</div>
+        <h2 id="s08-h">Real-World Examples</h2>
+
+        <p>These concepts are not school exercises. They have decided real missions. Here are three true stories. In one, careful design saved a landing. In another, a small type mistake cost a rocket. In the third, a reusable library began the history of modern programming. Tap a card to read each story.</p>
+
+        <div class="story-grid">
+
+          <div class="story-card" id="story-hamilton">
+            <div class="story-card-header">
+              <span class="story-avatar">🌙</span>
+              <span class="story-name">Margaret Hamilton &amp; Apollo 11</span>
+              <span class="story-trait">BUILT FOR FAILURE</span>
+            </div>
+            <p class="story-hook">During the first Moon landing, the guidance computer flashed alarms nobody had trained for. The software had been built to keep the important work alive.</p>
+            <button class="story-toggle" aria-expanded="false">Read their story →</button>
+            <div class="story-full">
+              <p>On 20 July 1969, the Apollo 11 lunar module Eagle was descending toward the Moon. Then the onboard computer began showing program alarms with the codes 1201 and 1202. Nobody in the cabin knew right away whether to continue or abort.</p>
+              <p>The alarms meant the computer's job-control system, called the Executive, had more work than it could finish. In many computers of that time, such an overload could mean a freeze. Here, the software restarted itself, dropped lower-priority jobs, and kept the work needed for guidance and landing. A controller in Houston decided the descent could continue.</p>
+              <p>Margaret Hamilton led the software engineering group at MIT's Instrumentation Laboratory, which built the onboard flight software. Credit should be shared accurately. The Executive and its priority-based design came from J. Halcombe Laning, and the whole effort was a team's work. Hamilton's documented contributions include asynchronous software, error detection and recovery, and priority displays that could interrupt the crew's normal readouts in an emergency.</p>
+              <p>The extra load was traced to the rendezvous radar, which was sending the computer more work than expected during descent. In other words, the cause was a hardware situation, not a software bug. The software's job was to survive it, and it did.</p>
+              <p>Now connect this to the concepts. This is error handling at its best. The designers did not assume a perfect flight. They expected something to go wrong and decided in advance what should be protected. It is also an early example of priorities, a close cousin of events: when many things demand attention, the program must decide what matters most.</p>
+              <p>The lesson for everyday coding is simple. Ask, "What happens when this goes wrong?" before it goes wrong. Decide what is essential. Make sure the essential part keeps running. Hamilton received the Presidential Medal of Freedom in 2016 for her contributions to Apollo flight software.</p>
+            </div>
+          </div>
+
+          <div class="story-card" id="story-ariane">
+            <div class="story-card-header">
+              <span class="story-avatar">🚀</span>
+              <span class="story-name">Ariane 5, Flight 501</span>
+              <span class="story-trait">ONE TYPE, ONE ROCKET</span>
+            </div>
+            <p class="story-hook">A brand-new European rocket broke up less than a minute after launch. The cause was a number that did not fit where it was put.</p>
+            <button class="story-toggle" aria-expanded="false">Read their story →</button>
+            <div class="story-full">
+              <p>On 4 June 1996, the first Ariane 5 rocket lifted off on its maiden flight. Roughly 40 seconds into the flight sequence, it veered off its path, broke up, and exploded. It was carrying four Cluster research satellites. An inquiry board set up by the European Space Agency and the French space agency CNES studied the failure and published its report within weeks.</p>
+              <p>The board traced the problem to a few lines in the inertial reference system. This unit tells the rocket where it is and how it is moving. The software converted a 64-bit floating-point number into a 16-bit signed integer. The number was larger than a 16-bit signed integer can hold. The largest such value is 32,767. The conversion failed, and the system raised an error.</p>
+              <p>Here is where the building blocks matter. This is a data type problem. A big number was squeezed into a small box. The board found that not every conversion in that code was protected against this error. Part of the reason was a workload limit on the computer, so the designers protected only some of the variables.</p>
+              <p>It was also an error handling problem. The unprotected error was not handled in a way that kept the system running. The inertial unit shut down, and its backup, which ran the same software, failed the same way. The diagnostic data it sent was then read by the main computer as if it were real flight data. The engines swung to extreme positions, and the rocket was lost.</p>
+              <p>There was one more twist. Much of this code was reused from the earlier Ariane 4. On that rocket, the numbers never grew that large, so the old assumption was safe. On the faster Ariane 5, it was not. A function that only made sense before liftoff was even left running for around 40 seconds of flight, where it served no purpose.</p>
+              <p>The lessons are very practical. Know the type and size of your data. Handle errors on purpose and do not assume they cannot happen. And when you reuse code, check that the old assumptions are still true. A tiny conversion, written carefully years earlier, can still bring down a large machine.</p>
+            </div>
+          </div>
+
+          <div class="story-card" id="story-hopper">
+            <div class="story-card-header">
+              <span class="story-avatar">📼</span>
+              <span class="story-name">Grace Hopper &amp; the A-0 System</span>
+              <span class="story-trait">REUSE BEFORE REWRITE</span>
+            </div>
+            <p class="story-hook">Early programmers copied useful routines out of each other's notebooks. Grace Hopper turned that habit into a shared library the computer could use.</p>
+            <button class="story-toggle" aria-expanded="false">Read their story →</button>
+            <div class="story-full">
+              <p>In the early 1950s, programming a computer was slow and repetitive. If you needed a common calculation, such as a sine, you often rewrote it from scratch for every new program. Hopper later recalled in a 1978 talk that people would simply copy a routine from a coworker's notebook.</p>
+              <p>Grace Hopper worked at the Eckert-Mauchly Computer Corporation on the UNIVAC I. In 1951 and 1952, she developed the A-0 system. She took the subroutines she and her colleagues had been collecting and stored them on magnetic tape. Each subroutine was given a call number so the machine could find the right tape.</p>
+              <p>A programmer then wrote a program as a sequence of those call numbers, with the needed values written right after each one. The A-0 system looked up each routine, gathered the matching machine code, and assembled it into a complete program. In modern terms, it worked more like a linker or loader than a full compiler. Even so, it is widely treated as the first step toward compilers. The system has been recognized as an IEEE Milestone.</p>
+              <p>Now map it to the concepts. A subroutine is a function, a named group of instructions you can reuse. The tape library is a module or library, a collection of code written elsewhere that you bring in when you need it. Hopper built these two ideas into one working system, decades before the words "import a library" became everyday language.</p>
+              <p>She also met resistance. Many people believed computers could only do arithmetic and could not write programs. According to accounts of her work, it took about two years before her approach was widely accepted. Her follow-up systems led toward the first compiler-based programming languages.</p>
+              <p>The lesson for today is easy to apply. When you catch yourself copying a block of code for the third time, you are being a coworker with a notebook. Stop. Package the code as a function. Put it where others can import it. Every time you do that, you are continuing a habit Grace Hopper started more than seventy years ago.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="micro-check" data-check-id="section-08-mc1">
+          <p class="micro-check-label">Quick Check</p>
+          <p class="micro-check-q">What went wrong in the Ariane 5 failure?</p>
+          <div class="micro-check-options">
+            <button class="micro-check-option" data-correct="true" data-option-id="a">A number too large for a 16-bit integer caused an unhandled error</button>
+            <button class="micro-check-option" data-option-id="b">A loop ran too many times</button>
+            <button class="micro-check-option" data-option-id="c">The code had no comments</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 09 ============ -->
+    <section id="section-09" aria-labelledby="s09-h">
+      <div class="section-inner">
+        <div class="section-label">Section 09</div>
+        <h2 id="s09-h">One-Sentence Summary</h2>
+        <p>If you remember only one line from this guide, make it this one.</p>
+        <div class="summary-banner">
+          <p class="summary-sentence">Every program, in any language, is built from the same 15 building blocks, so learn to store, decide, repeat, reuse, and protect information, and every new language becomes only a new way to spell it.</p>
+          <p class="summary-action">Today: open one small script and rename its vaguest variable.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 10 ============ -->
+    <section id="section-10" aria-labelledby="s10-h">
+      <div class="section-inner">
+        <div class="section-label">Section 10</div>
+        <h2 id="s10-h">Test Yourself: 15-Question Quiz</h2>
+        <p>Fifteen questions, one at a time. You will see right away whether you got each one correct. Explanations for any misses appear in your summary at the end, with a link back to the part of the guide to review.</p>
+
+        <div id="quiz-stepper">
+          <div id="quiz-progress-bar">
+            <span id="quiz-progress-text">Question <span id="quiz-current-num">1</span> of 15</span>
+            <span class="quiz-progress-sep">·</span>
+            <span id="quiz-score-display">Score: <span id="quiz-score">0</span>/15</span>
+          </div>
+          <div id="quiz-card-viewport">
+
+            <div class="quiz-card" data-question="0" data-tests-id="comp-variables" data-tests-label="Variables">
+              <p class="quiz-q-text">What does a variable do in a program?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">It repeats a set of instructions</button>
+                <button class="quiz-option" data-correct="true" data-option-id="b">It stores information or a value under a name</button>
+                <button class="quiz-option" data-option-id="c">It handles unexpected problems</button>
+                <button class="quiz-option" data-option-id="d">It reacts when a button is clicked</button>
+              </div>
+              <div class="quiz-explanation" hidden>A variable is a named box that remembers information. Repeating instructions is the job of loops, handling problems belongs to error handling, and reacting to a click belongs to events.</div>
+            </div>
+
+            <div class="quiz-card" data-question="1" data-tests-id="comp-data-types" data-tests-label="Data Types" hidden>
+              <p class="quiz-q-text">In many languages, <code>"25" + "5"</code> gives <code>"255"</code>. Why?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">The plus operator is broken</button>
+                <button class="quiz-option" data-option-id="b">Variables cannot hold numbers</button>
+                <button class="quiz-option" data-option-id="c">A loop ran twice</button>
+                <button class="quiz-option" data-correct="true" data-option-id="d">Both values are text, so they are joined instead of added</button>
+              </div>
+              <div class="quiz-explanation" hidden>Quotation marks make these values strings, and adding strings glues them together. The operator works as designed. This is why the kind of data, its data type, matters before you calculate.</div>
+            </div>
+
+            <div class="quiz-card" data-question="2" data-tests-id="comp-loops" data-tests-label="Loops" hidden>
+              <p class="quiz-q-text">Which concept lets you repeat the same instructions for every item in a group?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-correct="true" data-option-id="a">Loops</button>
+                <button class="quiz-option" data-option-id="b">Comments</button>
+                <button class="quiz-option" data-option-id="c">Scope</button>
+                <button class="quiz-option" data-option-id="d">Classes</button>
+              </div>
+              <div class="quiz-explanation" hidden>Loops repeat instructions, such as a <code>for</code> loop that visits each employee. Comments only explain code, scope controls who can see a variable, and classes are blueprints for objects.</div>
+            </div>
+
+            <div class="quiz-card" data-question="3" data-tests-id="comp-operators" data-tests-label="Operators" hidden>
+              <p class="quiz-q-text">What is the difference between <code>=</code> and <code>==</code>?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">There is no difference</button>
+                <button class="quiz-option" data-option-id="b">A single equals compares; a double equals stores</button>
+                <button class="quiz-option" data-correct="true" data-option-id="c">A single equals assigns a value; a double equals asks if two values are equal</button>
+                <button class="quiz-option" data-option-id="d">Both compare values, one is just faster</button>
+              </div>
+              <div class="quiz-explanation" hidden>The single symbol is the assignment operator and stores a value. The double symbol is a comparison operator and gives true or false. Mixing them up is a very common beginner bug.</div>
+            </div>
+
+            <div class="quiz-card" data-question="4" data-tests-id="section-02" data-tests-label="What Are Programming Concepts?" hidden>
+              <p class="quiz-q-text">How are programming concepts different from a programming language?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">Concepts only exist in Python</button>
+                <button class="quiz-option" data-correct="true" data-option-id="b">Concepts appear across languages; the language mostly changes the spelling</button>
+                <button class="quiz-option" data-option-id="c">You must master one concept fully before you touch another</button>
+                <button class="quiz-option" data-option-id="d">A language is the meaning, and concepts are the spelling</button>
+              </div>
+              <div class="quiz-explanation" hidden>The ideas stay the same from language to language, and the syntax is the spelling. In practice, the concepts overlap, so you learn them in order but use several together. The reverse claim, that a language is the meaning, has it backwards.</div>
+            </div>
+
+            <div class="quiz-card" data-question="5" data-tests-id="comp-scope" data-tests-label="Scope" hidden>
+              <p class="quiz-q-text">Why is it usually better to use local variables than global ones?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">They always run faster</button>
+                <button class="quiz-option" data-option-id="b">They are required for loops to work</button>
+                <button class="quiz-option" data-correct="true" data-option-id="c">They stop one function from changing another function's values by accident</button>
+                <button class="quiz-option" data-option-id="d">They look nicer in the file</button>
+              </div>
+              <div class="quiz-explanation" hidden>Local variables live only inside their function, so bugs stay close to their cause. Speed and looks are not the reason, and loops work with either kind.</div>
+            </div>
+
+            <div class="quiz-card" data-question="6" data-tests-id="comp-error-handling" data-tests-label="Error Handling" hidden>
+              <p class="quiz-q-text">A user types letters where a number is expected. Which concept helps the program stay alive and respond kindly?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-correct="true" data-option-id="a">Error handling, such as try and except</button>
+                <button class="quiz-option" data-option-id="b">Comments</button>
+                <button class="quiz-option" data-option-id="c">Modules</button>
+                <button class="quiz-option" data-option-id="d">Classes</button>
+              </div>
+              <div class="quiz-explanation" hidden>Error handling tries the risky step and says what to do if it fails. Comments are notes for people, modules bring in outside code, and classes organize large programs, but none of them catches a bad input.</div>
+            </div>
+
+            <div class="quiz-card" data-question="7" data-tests-id="comp-functions" data-tests-label="Functions" hidden>
+              <p class="quiz-q-text">The guide says to act the second time you need the same lines of code. What should you do?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">Copy and paste them again</button>
+                <button class="quiz-option" data-option-id="b">Delete the first copy</button>
+                <button class="quiz-option" data-option-id="c">Add a comment above each copy</button>
+                <button class="quiz-option" data-correct="true" data-option-id="d">Turn them into a function and call it</button>
+              </div>
+              <div class="quiz-explanation" hidden>A function holds the logic once, so a fix or change happens in one place. Copying leaves several versions that drift apart, and a comment does not remove the repetition.</div>
+            </div>
+
+            <div class="quiz-card" data-question="8" data-tests-id="section-04" data-tests-label="How the Concepts Work Together" hidden>
+              <p class="quiz-q-text">In the attendance example, what does a condition such as <code>if hours &gt; 8</code> actually read?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">A class for the whole company</button>
+                <button class="quiz-option" data-correct="true" data-option-id="b">The true or false result of a comparison</button>
+                <button class="quiz-option" data-option-id="c">A library of saved routines</button>
+                <button class="quiz-option" data-option-id="d">The name of the input file</button>
+              </div>
+              <div class="quiz-explanation" hidden>An operator compares the values and produces true or false, and the condition uses that answer to choose a path. Classes, libraries, and file names are not what a condition reads.</div>
+            </div>
+
+            <div class="quiz-card" data-question="9" data-tests-id="story-hamilton" data-tests-label="Margaret Hamilton and Apollo 11" hidden>
+              <p class="quiz-q-text">Why could Apollo 11's landing continue even though the computer showed overload alarms?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-correct="true" data-option-id="a">The software dropped lower-priority jobs and kept the essential guidance work running</button>
+                <button class="quiz-option" data-option-id="b">It ignored every alarm and kept all jobs at the same priority</button>
+                <button class="quiz-option" data-option-id="c">The astronauts rewrote the code during the descent</button>
+                <button class="quiz-option" data-option-id="d">The alarms were caused by a software bug that was quickly fixed</button>
+              </div>
+              <div class="quiz-explanation" hidden>The Executive was designed to shed less important work and restart while protecting what mattered most. The overload came from extra radar work, a hardware situation, not a bug, and the software was built to survive it.</div>
+            </div>
+
+            <div class="quiz-card" data-question="10" data-tests-id="story-ariane" data-tests-label="Ariane 5, Flight 501" hidden>
+              <p class="quiz-q-text">What was the data type problem behind the Ariane 5 failure?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">A loop counted past its limit</button>
+                <button class="quiz-option" data-option-id="b">A list was empty when the code read it</button>
+                <button class="quiz-option" data-option-id="c">A comment hid part of the code</button>
+                <button class="quiz-option" data-correct="true" data-option-id="d">A 64-bit floating-point number was too large to fit in a 16-bit signed integer</button>
+              </div>
+              <div class="quiz-explanation" hidden>The converted value exceeded what a 16-bit signed integer can hold, and the conversion was not protected. Loops, empty lists, and comments were not the cause.</div>
+            </div>
+
+            <div class="quiz-card" data-question="11" data-tests-id="story-hopper" data-tests-label="Grace Hopper and the A-0 System" hidden>
+              <p class="quiz-q-text">In modern terms, Grace Hopper's tape of call-numbered subroutines was most like what?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">A comment</button>
+                <button class="quiz-option" data-option-id="b">An event</button>
+                <button class="quiz-option" data-correct="true" data-option-id="c">A library of reusable functions</button>
+                <button class="quiz-option" data-option-id="d">A loop</button>
+              </div>
+              <div class="quiz-explanation" hidden>Each subroutine was a named, reusable group of instructions, which is a function, and the collection of them is a library. She built these ideas together long before the word "import" was common.</div>
+            </div>
+
+            <div class="quiz-card" data-question="12" data-tests-id="section-06" data-tests-label="Benefits &amp; Consequences" hidden>
+              <p class="quiz-q-text">Which is a likely consequence of skipping the building blocks?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-correct="true" data-option-id="a">Copy-pasted code piles up until nobody dares to change it</button>
+                <button class="quiz-option" data-option-id="b">Programs run faster because there are fewer parts</button>
+                <button class="quiz-option" data-option-id="c">You no longer need to test your work</button>
+                <button class="quiz-option" data-option-id="d">New languages become easier to learn</button>
+              </div>
+              <div class="quiz-explanation" hidden>Without functions, lists, and clear structure, repeated code spreads and becomes risky to touch. Skipping the blocks does not speed things up, remove the need to test, or help with new languages.</div>
+            </div>
+
+            <div class="quiz-card" data-question="13" data-tests-id="comp-arrays-lists" data-tests-label="Arrays / Lists" hidden>
+              <p class="quiz-q-text">Why store employees in a list instead of in separate variables like <code>employee1</code> and <code>employee2</code>?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">It only makes the file look shorter</button>
+                <button class="quiz-option" data-correct="true" data-option-id="b">You can loop through the whole group and add members easily</button>
+                <button class="quiz-option" data-option-id="c">Lists cannot be used with loops</button>
+                <button class="quiz-option" data-option-id="d">Separate variables cannot hold text</button>
+              </div>
+              <div class="quiz-explanation" hidden>A list keeps many values in one collection, so a loop can visit each one and a new member is just another item. Separate variables can hold text, but they cannot be walked through in a loop.</div>
+            </div>
+
+            <div class="quiz-card" data-question="14" data-tests-id="section-05" data-tests-label="How to Apply It Daily" hidden>
+              <p class="quiz-q-text">In the recommended learning order, which concept comes first?</p>
+              <div class="quiz-options">
+                <button class="quiz-option" data-option-id="a">Events</button>
+                <button class="quiz-option" data-option-id="b">Classes / OOP</button>
+                <button class="quiz-option" data-correct="true" data-option-id="c">Variables</button>
+                <button class="quiz-option" data-option-id="d">Modules / Libraries</button>
+              </div>
+              <div class="quiz-explanation" hidden>Variables come first because every other concept depends on storing information. Classes, modules, and events come later, once the small pieces are comfortable.</div>
+            </div>
+
+          </div>
+          <div id="quiz-nav">
+            <button id="quiz-prev-btn" class="quiz-nav-btn" disabled>Previous</button>
+            <button id="quiz-next-btn" class="quiz-nav-btn quiz-nav-btn-primary" disabled>Next</button>
+          </div>
+        </div>
+
+        <div id="quiz-complete" class="quiz-complete" hidden>
+          <div class="quiz-complete-score">Score: <span id="quiz-final-score">0 / 15</span></div>
+          <p id="quiz-complete-message"></p>
+          <p id="quiz-growth-line"></p>
+          <div id="quiz-review-list"></div>
+          <button id="quiz-retake-btn" class="quiz-retake-btn">↺ Retake Quiz</button>
+          <button id="quiz-reset-btn" class="quiz-reset-btn">Reset Progress</button>
+        </div>
+
+        <div id="quiz-export-toolbar" class="quiz-export-toolbar">
+          <button id="quiz-export-blank-btn" class="quiz-export-btn">📄 Export Blank Exam (.docx)</button>
+          <button id="quiz-export-results-btn" class="quiz-export-btn" disabled>📝 Export My Results (.docx)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 11 ============ -->
+    <section id="section-11" aria-labelledby="s11-h">
+      <div class="section-inner">
+        <div class="section-label">Section 11</div>
+        <h2 id="s11-h">Disclaimer &amp; Sources</h2>
+        <div class="disclaimer-card">
+          <p>This guide is for educational purposes only. The 15 concepts, the operator categories, the employee attendance example, and the recommended learning order come from the supplied study notes. The Section 08 stories are summaries written in our own words from the sources below. Code samples are simplified for learning and are not production-ready.</p>
+          <p style="margin-bottom:4px"><strong>Sources</strong></p>
+          <ol class="source-list">
+            <li>"Fundamental Programming Concepts." Study notes supplied by the guide's requester (Fundamental_Programming_Concepts.txt).</li>
+            <li>Lions, J.L. (Chairman). "ARIANE 5 Flight 501 Failure: Report by the Inquiry Board." European Space Agency and CNES, 19 July 1996.</li>
+            <li>Nuseibeh, Bashar. "Ariane 5: Who Dunnit?" IEEE Software, 14(3), May 1997.</li>
+            <li>"Apollo 11 Lunar Surface Journal." NASA (accounts of the 1201 and 1202 program alarms during powered descent).</li>
+            <li>Hopper, Grace Murray. "Keynote Address." Proceedings of the ACM SIGPLAN History of Programming Languages Conference, June 1978.</li>
+            <li>Strawn, George, and Candace Strawn. "Grace Hopper: Compilers and Cobol." IT Professional, 17(1), 2015, pp. 62–64.</li>
+            <li>IEEE Spectrum. "From Punch Cards to Python." <a href="https://spectrum.ieee.org/from-punch-cards-to-python" rel="noopener" target="_blank">spectrum.ieee.org/from-punch-cards-to-python</a></li>
+            <li>Python Software Foundation. "The Python Tutorial." Python documentation.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <div class="heart-closing-card">
+      <p class="heart-closing-text">Did this guide help you?</p>
+      <button id="heart-toggle-bottom" class="heart-btn heart-btn-large" aria-label="Heart this guide" aria-pressed="false" title="Heart this guide">
+        <svg class="heart-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.3-8.1C.6 9.9 1.8 6 5.1 5c2-.6 3.9.2 5 1.8L12 8.5l1.9-1.7c1.1-1.6 3-2.4 5-1.8 3.3 1 4.5 4.9 2.4 7.9C18.7 16.65 12 21 12 21Z"/></svg>
+        <span>Heart this guide</span>
+      </button>
+    </div>
+
+    <!-- ============ SECTION 12 ============ -->
+    <section id="section-12" aria-labelledby="s12-h">
+      <div class="section-inner">
+        <div class="section-label">Section 12</div>
+        <h2 id="s12-h">Full Original Text (Verbatim)</h2>
+        <div class="verbatim-notice">The content below is reproduced exactly as provided, in full and unedited — it is the original source text this guide was built from, kept here as a standalone reference alongside the rewritten guide above.</div>
+        <div class="verbatim-body">
+          <p>In programming, there are several fundamental concepts that almost every programming language uses. These are the building blocks that tell a computer what to do, when to do it, how many times to do it, and how to handle information.</p>
+
+          <h3>1. Fundamental programming concepts</h3>
+          <table>
+            <thead><tr><th>Concept</th><th>Purpose</th><th>Simple example</th></tr></thead>
+            <tbody>
+              <tr><td>1. Variables</td><td>Store information or values.</td><td>age = 25</td></tr>
+              <tr><td>2. Data Types</td><td>Define the kind of information.</td><td>Integer, String, Boolean</td></tr>
+              <tr><td>3. Operators</td><td>Perform calculations or comparisons.</td><td>+, -, ==, &gt;</td></tr>
+              <tr><td>4. Conditions</td><td>Make decisions based on criteria.</td><td>if age &gt;= 18</td></tr>
+              <tr><td>5. Loops</td><td>Repeat instructions.</td><td>for, while</td></tr>
+              <tr><td>6. Functions</td><td>Group reusable instructions.</td><td>calculate_total()</td></tr>
+              <tr><td>7. Arrays / Lists</td><td>Store multiple values in one collection.</td><td>[10, 20, 30]</td></tr>
+              <tr><td>8. Objects / Structures</td><td>Group related information together.</td><td>Employee name, ID, salary</td></tr>
+              <tr><td>9. Input / Output</td><td>Receive information and produce results.</td><td>Read a file, display a message</td></tr>
+              <tr><td>10. Error Handling</td><td>Handle unexpected situations.</td><td>try, catch, except</td></tr>
+              <tr><td>11. Comments</td><td>Explain what the code does.</td><td>// Calculate total</td></tr>
+              <tr><td>12. Scope</td><td>Determine where a variable can be accessed.</td><td>Local vs. global variables</td></tr>
+              <tr><td>13. Classes / OOP</td><td>Organize code using objects and blueprints.</td><td>class Employee</td></tr>
+              <tr><td>14. Modules / Libraries</td><td>Reuse code written elsewhere.</td><td>Import a library</td></tr>
+              <tr><td>15. Events</td><td>Execute instructions when something happens.</td><td>Button clicked, key pressed</td></tr>
+            </tbody>
+          </table>
+
+          <h3>2. Common programming operators</h3>
+          <p>Operators are worth studying separately because they are used frequently in conditions, calculations, and loops.</p>
+          <table>
+            <thead><tr><th>Operator Category</th><th>Operators</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td>Arithmetic</td><td>+ - * / %</td><td>Mathematical calculations</td></tr>
+              <tr><td>Comparison</td><td>== != &gt; &lt; &gt;= &lt;=</td><td>Compare values</td></tr>
+              <tr><td>Logical</td><td>AND OR NOT</td><td>Combine or reverse conditions</td></tr>
+              <tr><td>Assignment</td><td>= += -= *= /=</td><td>Assign or update values</td></tr>
+              <tr><td>Increment / Decrement</td><td>++ --</td><td>Increase or decrease values</td></tr>
+              <tr><td>Bitwise</td><td>&amp; | ^ ~</td><td>Perform bit-level operations</td></tr>
+              <tr><td>Membership</td><td>in, not in</td><td>Check whether an item exists in a collection</td></tr>
+              <tr><td>Identity</td><td>is, is not</td><td>Check whether two references point to the same object</td></tr>
+            </tbody>
+          </table>
+
+          <h3>3. How these concepts work together</h3>
+          <p>Let's imagine you're creating a program that checks employee attendance.</p>
+          <p>Example: Employee Attendance System</p>
+          <p>1. Variables</p>
+          <p>Store the employee's name and attendance status.</p>
+          <pre><code>name = "John"
+hours = 9</code></pre>
+          <p>2. Conditions</p>
+          <p>Determine whether the employee is late.</p>
+          <pre><code>if hours &gt; 8:
+    print("Overtime")</code></pre>
+          <p>3. Operators</p>
+          <p>Compare working hours.</p>
+          <pre><code>hours &gt;= 8</code></pre>
+          <p>4. Loops</p>
+          <p>Check multiple employees.</p>
+          <pre><code>for employee in employees:
+    print(employee)</code></pre>
+          <p>5. Functions</p>
+          <p>Reuse the attendance-checking process.</p>
+          <pre><code>def check_attendance(hours):
+    return hours &gt;= 8</code></pre>
+          <p>6. Output</p>
+          <p>Display the results.</p>
+          <pre><code>print("Attendance checked!")</code></pre>
+
+          <h3>4. My recommended learning order</h3>
+          <p>If your goal is to understand programming deeply and become better at developing applications, I recommend learning them in this order:</p>
+          <table>
+            <thead><tr><th style="text-align:right">Priority</th><th>Concept</th><th>What you should understand</th></tr></thead>
+            <tbody>
+              <tr><td style="text-align:right">1</td><td>Variables</td><td>How information is stored</td></tr>
+              <tr><td style="text-align:right">2</td><td>Data Types</td><td>What kind of information is stored</td></tr>
+              <tr><td style="text-align:right">3</td><td>Operators</td><td>How values are manipulated</td></tr>
+              <tr><td style="text-align:right">4</td><td>Conditions</td><td>How programs make decisions</td></tr>
+              <tr><td style="text-align:right">5</td><td>Loops</td><td>How programs repeat tasks</td></tr>
+              <tr><td style="text-align:right">6</td><td>Functions</td><td>How to organize reusable instructions</td></tr>
+              <tr><td style="text-align:right">7</td><td>Arrays / Lists</td><td>How to manage collections of data</td></tr>
+              <tr><td style="text-align:right">8</td><td>Error Handling</td><td>How to prevent and manage failures</td></tr>
+              <tr><td style="text-align:right">9</td><td>Scope</td><td>How variable accessibility works</td></tr>
+              <tr><td style="text-align:right">10</td><td>OOP</td><td>How to organize larger applications</td></tr>
+              <tr><td style="text-align:right">11</td><td>Modules / Libraries</td><td>How to extend program capabilities</td></tr>
+              <tr><td style="text-align:right">12</td><td>Events</td><td>How programs respond to user actions</td></tr>
+            </tbody>
+          </table>
+          <p>One important distinction to remember:</p>
+          <ul>
+            <li>Variables = Remember information.</li>
+            <li>Operators = Manipulate information.</li>
+            <li>Conditions = Make decisions.</li>
+            <li>Loops = Repeat instructions.</li>
+            <li>Functions = Reuse instructions.</li>
+            <li>Data Structures = Organize information.</li>
+            <li>Events = Respond to actions.</li>
+            <li>Error Handling = Handle problems.</li>
+          </ul>
+          <p>These are the fundamental building blocks of programming. Once you understand them, learning Python, AutoLISP, PowerShell, JavaScript, or other programming languages becomes considerably easier.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <button id="back-to-top" aria-label="Back to top">↑</button>
+
+  <script>
+    window.addEventListener('load', function () {
+
+      /* ===== Progress persistence ===== */
+      const GUIDE_ID = location.pathname.split('/').pop().replace(/\.html$/, '') || 'index';
+      function saveProgress(partial) {
+        try {
+          const existing = JSON.parse(localStorage.getItem(GUIDE_ID) || '{}');
+          localStorage.setItem(GUIDE_ID, JSON.stringify({ ...existing, ...partial }));
+        } catch (e) { /* storage unavailable: fail silently */ }
+      }
+      function loadProgress() {
+        try { return JSON.parse(localStorage.getItem(GUIDE_ID) || 'null'); }
+        catch (e) { return null; }
+      }
+      function resetProgress() {
+        try { localStorage.removeItem(GUIDE_ID); } catch (e) {}
+      }
+
+      /* ===== Shared state for shuffle + persistence ===== */
+      const optionOrder = {};   // key -> option ids in on-screen order
+      const microAnswers = {};  // data-check-id -> data-option-id tapped
+
+      /* ===== Shared anchor helper ===== */
+      function scrollToAnchor(id, pulse) {
+        if (pulse === undefined) pulse = true;
+        const target = document.getElementById(id);
+        if (!target) return;
+        if (target.classList.contains('tactic-card') && !target.classList.contains('open')) {
+          target.classList.add('open');
+          target.setAttribute('aria-expanded', 'true');
+        }
+        if (target.classList.contains('story-card')) {
+          const full = target.querySelector('.story-full');
+          const tgl = target.querySelector('.story-toggle');
+          if (full && !full.classList.contains('open')) {
+            full.classList.add('open');
+            if (tgl) { tgl.setAttribute('aria-expanded', 'true'); tgl.textContent = '↑ Collapse'; }
+          }
+        }
+        const offset = 64;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+        if (pulse) {
+          target.classList.add('anchor-pulse');
+          setTimeout(function () { target.classList.remove('anchor-pulse'); }, 1200);
+        }
+      }
+      document.body.addEventListener('click', function (e) {
+        const link = e.target.closest('a.applies-to-tag[href^="#"]');
+        if (!link) return;
+        e.preventDefault();
+        scrollToAnchor(link.getAttribute('href').slice(1));
+      });
+
+      /* ===== Reading progress bar + back to top ===== */
+      const fill = document.getElementById('reading-bar-fill');
+      function updateReadingBar() {
+        const scrolled = window.scrollY;
+        const total = document.documentElement.scrollHeight - window.innerHeight;
+        const pct = total > 0 ? Math.round((scrolled / total) * 100) : 0;
+        fill.style.width = pct + '%';
+      }
+      window.addEventListener('scroll', updateReadingBar);
+      updateReadingBar();
+      const topBtn = document.getElementById('back-to-top');
+      window.addEventListener('scroll', function () { topBtn.classList.toggle('show', window.scrollY > 400); });
+      topBtn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+      /* ===== Sidebar ===== */
+      function openSidebar() {
+        document.getElementById('sidebar').classList.add('open');
+        document.getElementById('sb-overlay').classList.add('visible');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sb-overlay').classList.remove('visible');
+        document.body.style.overflow = '';
+      }
+      document.getElementById('sb-close').addEventListener('click', closeSidebar);
+      document.getElementById('sb-overlay').addEventListener('click', closeSidebar);
+      document.getElementById('menu-btn').addEventListener('click', openSidebar);
+      document.getElementById('sb-nav').addEventListener('click', function (e) {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (href && href[0] === '#') {
+          e.preventDefault();
+          scrollToAnchor(href.slice(1), false);
+          if (window.innerWidth <= 860) closeSidebar();
+        }
+      });
+
+      /* ===== Estimated reading time ===== */
+      function calcReadTime(el) {
+        const words = (el.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+        return Math.max(1, Math.round(words / 250));
+      }
+      const mainEl = document.getElementById('main');
+      if (mainEl) {
+        const totalMin = calcReadTime(mainEl);
+        const rtEl = document.getElementById('total-read-time');
+        if (rtEl) rtEl.textContent = '⏱ ~' + totalMin + ' min read';
+      }
+      document.querySelectorAll('section[id]').forEach(function (sec) {
+        const timeEl = document.getElementById('time-' + sec.id);
+        if (timeEl) timeEl.textContent = '~' + calcReadTime(sec) + 'm';
+      });
+
+      /* ===== Search ===== */
+      const searchIndex = [
+        { id: 'section-01', label: 'Why This Matters', keywords: 'urgency cost why beginners copy paste' },
+        { id: 'section-02', label: 'What Are Programming Concepts?', keywords: 'definition meaning language misconception' },
+        { id: 'section-03', label: 'The 15 Core Concepts', keywords: 'framework building blocks list' },
+        { id: 'section-04', label: 'How the Concepts Work Together', keywords: 'mechanics attendance example flow cause effect' },
+        { id: 'section-05', label: 'How to Apply It Daily', keywords: 'habits practice learning order path' },
+        { id: 'section-06', label: 'Benefits & Consequences', keywords: 'results outcomes pros cons' },
+        { id: 'section-07', label: 'Narrative Examples', keywords: 'scenes dialogue wrong way right way' },
+        { id: 'section-08', label: 'Real-World Examples', keywords: 'stories apollo ariane hopper' },
+        { id: 'section-09', label: 'One-Sentence Summary', keywords: 'summary remember' },
+        { id: 'section-10', label: 'Quiz', keywords: 'test questions exam export docx' },
+        { id: 'section-11', label: 'Disclaimer & Sources', keywords: 'references bibliography' },
+        { id: 'section-12', label: 'Full Original Text (Verbatim)', keywords: 'source notes original txt' },
+        { id: 'comp-variables', label: 'Variables (Concept 01)', keywords: 'store value name box age' },
+        { id: 'comp-data-types', label: 'Data Types (Concept 02)', keywords: 'integer string boolean float text number' },
+        { id: 'comp-operators', label: 'Operators (Concept 03)', keywords: 'arithmetic comparison logical assignment bitwise membership identity plus equals' },
+        { id: 'comp-conditions', label: 'Conditions (Concept 04)', keywords: 'if else decision branch' },
+        { id: 'comp-loops', label: 'Loops (Concept 05)', keywords: 'for while repeat iterate' },
+        { id: 'comp-functions', label: 'Functions (Concept 06)', keywords: 'def defun reuse parameter return' },
+        { id: 'comp-arrays-lists', label: 'Arrays / Lists (Concept 07)', keywords: 'collection index array' },
+        { id: 'comp-objects-structures', label: 'Objects / Structures (Concept 08)', keywords: 'record dictionary fields group' },
+        { id: 'comp-input-output', label: 'Input / Output (Concept 09)', keywords: 'read file print display input' },
+        { id: 'comp-error-handling', label: 'Error Handling (Concept 10)', keywords: 'try catch except failure exception' },
+        { id: 'comp-comments', label: 'Comments (Concept 11)', keywords: 'notes explain document' },
+        { id: 'comp-scope', label: 'Scope (Concept 12)', keywords: 'local global visibility' },
+        { id: 'comp-classes-oop', label: 'Classes / OOP (Concept 13)', keywords: 'object oriented blueprint class' },
+        { id: 'comp-modules-libraries', label: 'Modules / Libraries (Concept 14)', keywords: 'import package reuse code' },
+        { id: 'comp-events', label: 'Events (Concept 15)', keywords: 'click key press button listener' },
+        { id: 'story-hamilton', label: 'Margaret Hamilton & Apollo 11', keywords: 'apollo moon 1202 alarm priority error handling' },
+        { id: 'story-ariane', label: 'Ariane 5, Flight 501', keywords: 'rocket overflow integer data type' },
+        { id: 'story-hopper', label: 'Grace Hopper & the A-0 System', keywords: 'subroutine library compiler univac' }
+      ];
+      const searchInput = document.getElementById('search-input');
+      const searchResults = document.getElementById('search-results');
+      let activeResultIndex = -1;
+      function renderResults(matches) {
+        searchResults.innerHTML = '';
+        activeResultIndex = -1;
+        if (matches.length === 0) { searchResults.classList.remove('visible'); return; }
+        matches.slice(0, 8).forEach(function (m) {
+          const item = document.createElement('div');
+          item.className = 'search-result-item';
+          item.setAttribute('role', 'option');
+          item.dataset.targetId = m.id;
+          item.textContent = m.label;
+          searchResults.appendChild(item);
+        });
+        searchResults.classList.add('visible');
+      }
+      function closeSearch() { searchInput.value = ''; renderResults([]); }
+      function goToResult(id) { scrollToAnchor(id); closeSearch(); }
+      searchInput.addEventListener('input', function () {
+        const q = searchInput.value.trim().toLowerCase();
+        if (q.length === 0) { renderResults([]); return; }
+        renderResults(searchIndex.filter(function (entry) {
+          return entry.label.toLowerCase().includes(q) || entry.keywords.toLowerCase().includes(q);
+        }));
+      });
+      searchInput.addEventListener('keydown', function (e) {
+        const items = searchResults.querySelectorAll('.search-result-item');
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeResultIndex = Math.min(activeResultIndex + 1, items.length - 1);
+          items.forEach(function (item, i) { item.classList.toggle('active', i === activeResultIndex); });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeResultIndex = Math.max(activeResultIndex - 1, 0);
+          items.forEach(function (item, i) { item.classList.toggle('active', i === activeResultIndex); });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const target = items[activeResultIndex] || items[0];
+          if (target) goToResult(target.dataset.targetId);
+        } else if (e.key === 'Escape') {
+          closeSearch();
+        }
+      });
+      searchResults.addEventListener('click', function (e) {
+        const item = e.target.closest('.search-result-item');
+        if (item) goToResult(item.dataset.targetId);
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#search-wrap')) closeSearch();
+      });
+
+      /* ===== Scroll spy ===== */
+      const sectionTitles = {
+        'section-01': 'Why This Matters',
+        'section-02': 'What It Is',
+        'section-03': 'The 15 Core Concepts',
+        'section-04': 'How It Works',
+        'section-05': 'How to Apply It',
+        'section-06': 'Benefits & Consequences',
+        'section-07': 'Narrative Examples',
+        'section-08': 'Real-World Examples',
+        'section-09': 'One-Sentence Summary',
+        'section-10': 'Quiz',
+        'section-11': 'Disclaimer & Sources',
+        'section-12': 'Full Original Text'
+      };
+      const scrollSpy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            const id = e.target.id;
+            document.querySelectorAll('.sb-link').forEach(function (a) {
+              a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+            });
+            const num = parseInt(id.replace('section-', ''), 10);
+            if (num > ((loadProgress() || {}).furthestSection || 0)) saveProgress({ furthestSection: num });
+            if (sectionTitles[id]) document.getElementById('topbar-title').textContent = sectionTitles[id];
+          }
+        });
+      }, { rootMargin: '-15% 0px -60% 0px' });
+      document.querySelectorAll('section[id]').forEach(function (s) { scrollSpy.observe(s); });
+
+      /* ===== Accordion (Section 03) ===== */
+      function toggleTacticCard(card) {
+        const isOpen = card.classList.toggle('open');
+        card.setAttribute('aria-expanded', isOpen);
+      }
+      document.querySelectorAll('.tactic-card').forEach(function (card) {
+        card.addEventListener('click', function () { toggleTacticCard(card); });
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleTacticCard(card);
+          }
+        });
+      });
+
+      /* ===== Story cards (Section 08) ===== */
+      document.querySelectorAll('.story-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const full = btn.nextElementSibling;
+          const isOpen = full.classList.toggle('open');
+          btn.setAttribute('aria-expanded', isOpen);
+          btn.textContent = isOpen ? '↑ Collapse' : 'Read their story →';
+        });
+      });
+
+      /* ===== Shuffle helpers ===== */
+      function blockKey(block) {
+        return block.classList.contains('micro-check') ? block.dataset.checkId : 'quiz-' + block.dataset.question;
+      }
+      function optionsBox(block) { return block.querySelector('.quiz-options, .micro-check-options'); }
+      function currentOrder(block) {
+        return Array.from(optionsBox(block).children).map(function (b) { return b.dataset.optionId; });
+      }
+      function shuffleOptions(block) {
+        const box = optionsBox(block);
+        const btns = Array.from(box.children);
+        for (let i = btns.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = btns[i]; btns[i] = btns[j]; btns[j] = tmp;
+        }
+        btns.forEach(function (b) { box.appendChild(b); });
+      }
+      function applySavedOrder(block, ids) {
+        const box = optionsBox(block);
+        ids.forEach(function (id) {
+          const btn = box.querySelector('[data-option-id="' + id + '"]');
+          if (btn) box.appendChild(btn);
+        });
+      }
+
+      /* ===== Micro-checks ===== */
+      document.querySelectorAll('.micro-check').forEach(function (block) {
+        const checkId = block.dataset.checkId;
+        block.addEventListener('click', function (e) {
+          const optBtn = e.target.closest('.micro-check-option');
+          if (!optBtn || optBtn.disabled) return;
+          const opts = Array.from(block.querySelectorAll('.micro-check-option'));
+          const correctOpt = block.querySelector('.micro-check-option[data-correct="true"]');
+          correctOpt.classList.add('correct');
+          const wasCorrect = optBtn === correctOpt;
+          if (!wasCorrect) optBtn.classList.add('selected', 'wrong');
+          opts.forEach(function (o) { o.disabled = true; });
+          microAnswers[checkId] = optBtn.dataset.optionId;
+          optionOrder[checkId] = currentOrder(block);
+          saveProgress({ microAnswers: microAnswers, optionOrder: optionOrder });
+        });
+      });
+
+      /* ===== Quiz ===== */
+      const quizCards = Array.from(document.querySelectorAll('#quiz-card-viewport .quiz-card'));
+      let quizCurrent = 0;
+      let answered = new Array(15).fill(null);
+      let selectedIndexes = new Array(15).fill(null);
+      let missed = new Array(15).fill(null);
+      function updateScoreDisplay() {
+        const correct = answered.filter(function (a) { return a === 'correct'; }).length;
+        document.getElementById('quiz-score').textContent = correct;
+      }
+      function renderQuizCard(i) {
+        quizCards.forEach(function (c, idx) { c.hidden = idx !== i; });
+        document.getElementById('quiz-current-num').textContent = i + 1;
+        document.getElementById('quiz-prev-btn').disabled = i === 0;
+        const card = quizCards[i];
+        const isAnswered = answered[i] !== null;
+        const nextBtn = document.getElementById('quiz-next-btn');
+        nextBtn.disabled = !isAnswered;
+        nextBtn.textContent = i === 14 ? 'Finish' : 'Next';
+        const opts = Array.from(card.querySelectorAll('.quiz-option'));
+        opts.forEach(function (o) { o.classList.remove('selected', 'correct', 'wrong'); o.disabled = isAnswered; });
+        if (isAnswered) {
+          card.querySelector('.quiz-option[data-correct="true"]').classList.add('correct');
+          const selIdx = selectedIndexes[i];
+          if (selIdx !== null && answered[i] === 'wrong') {
+            opts[selIdx].classList.add('selected', 'wrong');
+          }
+        }
+      }
+      function selectQuizOption(card, optBtn) {
+        const i = Number(card.dataset.question);
+        if (answered[i] !== null) return;
+        const opts = Array.from(card.querySelectorAll('.quiz-option'));
+        selectedIndexes[i] = opts.indexOf(optBtn);
+        const correctOpt = card.querySelector('.quiz-option[data-correct="true"]');
+        correctOpt.classList.add('correct');
+        if (optBtn === correctOpt) {
+          answered[i] = 'correct';
+          missed[i] = null;
+        } else {
+          optBtn.classList.add('selected', 'wrong');
+          answered[i] = 'wrong';
+          missed[i] = { id: card.dataset.testsId, label: card.dataset.testsLabel };
+        }
+        opts.forEach(function (o) { o.disabled = true; });
+        updateScoreDisplay();
+        const nextBtn = document.getElementById('quiz-next-btn');
+        nextBtn.disabled = false;
+        nextBtn.textContent = i === 14 ? 'Finish' : 'Next';
+      }
+      document.getElementById('quiz-card-viewport').addEventListener('click', function (e) {
+        const optBtn = e.target.closest('.quiz-option');
+        if (!optBtn || optBtn.disabled) return;
+        selectQuizOption(optBtn.closest('.quiz-card'), optBtn);
+      });
+      document.getElementById('quiz-prev-btn').addEventListener('click', function () {
+        if (quizCurrent > 0) { quizCurrent--; renderQuizCard(quizCurrent); }
+      });
+      document.getElementById('quiz-next-btn').addEventListener('click', function () {
+        if (quizCurrent === 14) {
+          document.getElementById('quiz-stepper').hidden = true;
+          showQuizComplete(answered.filter(function (a) { return a === 'correct'; }).length);
+          return;
+        }
+        quizCurrent++;
+        renderQuizCard(quizCurrent);
+      });
+      renderQuizCard(0);
+
+      /* ===== Quiz complete summary ===== */
+      function showQuizComplete(correct) {
+        document.getElementById('quiz-final-score').textContent = correct + ' / 15';
+        const msgEl = document.getElementById('quiz-complete-message');
+        const listEl = document.getElementById('quiz-review-list');
+        listEl.innerHTML = '';
+        const growthEl = document.getElementById('quiz-growth-line');
+        const pre = (loadProgress() || {}).pretestScore;
+        if (typeof pre === 'number') {
+          const after = answered.slice(0, 3).filter(function (a) { return a === 'correct'; }).length;
+          growthEl.textContent = after === pre ? 'Questions 1–3: held steady at ' + pre + '/3.' : 'Questions 1–3: ' + pre + '/3 before → ' + after + '/3 after.';
+        } else { growthEl.textContent = ''; }
+        if (correct === 15) {
+          msgEl.textContent = "Perfect score. You've got this one down.";
+        } else {
+          msgEl.textContent = "Here's what to revisit:";
+          missed.forEach(function (m, i) {
+            if (!m) return;
+            const card = quizCards[i];
+            const explanationText = card.querySelector('.quiz-explanation').textContent;
+            const yourOptBtn = card.querySelectorAll('.quiz-option')[selectedIndexes[i]];
+            const correctOptBtn = card.querySelector('.quiz-option[data-correct="true"]');
+            const item = document.createElement('div');
+            item.className = 'quiz-review-item';
+            const a = document.createElement('a');
+            a.className = 'quiz-review-link';
+            a.href = '#' + m.id;
+            a.textContent = 'Q' + (i + 1) + ' — Review: ' + m.label + ' →';
+            const yourAns = document.createElement('p');
+            yourAns.className = 'quiz-review-your-answer';
+            yourAns.textContent = 'Your answer: ' + yourOptBtn.textContent;
+            const correctAns = document.createElement('p');
+            correctAns.className = 'quiz-review-correct-answer';
+            correctAns.textContent = 'Correct answer: ' + correctOptBtn.textContent;
+            const exp = document.createElement('p');
+            exp.className = 'quiz-review-explanation';
+            exp.textContent = explanationText;
+            item.appendChild(a);
+            item.appendChild(yourAns);
+            item.appendChild(correctAns);
+            item.appendChild(exp);
+            listEl.appendChild(item);
+          });
+        }
+        document.getElementById('quiz-complete').hidden = false;
+        document.getElementById('quiz-export-results-btn').disabled = false;
+        saveProgress({ answered: answered, selectedIndexes: selectedIndexes, missed: missed });
+      }
+      document.getElementById('quiz-review-list').addEventListener('click', function (e) {
+        const link = e.target.closest('a.quiz-review-link');
+        if (!link) return;
+        e.preventDefault();
+        scrollToAnchor(link.getAttribute('href').slice(1));
+      });
+      document.getElementById('quiz-retake-btn').addEventListener('click', function () {
+        quizCurrent = 0;
+        answered = new Array(15).fill(null);
+        selectedIndexes = new Array(15).fill(null);
+        missed = new Array(15).fill(null);
+        quizCards.forEach(function (card) {
+          card.querySelectorAll('.quiz-option').forEach(function (opt) {
+            opt.classList.remove('selected', 'correct', 'wrong');
+            opt.disabled = false;
+          });
+        });
+        document.getElementById('quiz-score').textContent = '0';
+        Object.keys(optionOrder).forEach(function (k) { if (k.indexOf('quiz-') === 0) delete optionOrder[k]; });
+        quizCards.forEach(shuffleOptions);
+        document.getElementById('quiz-export-results-btn').disabled = true;
+        saveProgress({ answered: answered, selectedIndexes: selectedIndexes, missed: missed, optionOrder: optionOrder });
+        document.getElementById('quiz-complete').hidden = true;
+        document.getElementById('quiz-stepper').hidden = false;
+        renderQuizCard(0);
+        scrollToAnchor('section-10');
+      });
+      document.getElementById('quiz-reset-btn').addEventListener('click', function () {
+        resetProgress();
+        location.reload();
+      });
+
+      /* ===== Shuffle + persistence wiring ===== */
+      const savedState = loadProgress() || {};
+      Object.assign(optionOrder, savedState.optionOrder || {});
+      Object.assign(microAnswers, savedState.microAnswers || {});
+      document.querySelectorAll('.quiz-card, .micro-check').forEach(function (block) {
+        const key = blockKey(block);
+        if (optionOrder[key]) applySavedOrder(block, optionOrder[key]); else shuffleOptions(block);
+      });
+      if (Array.isArray(savedState.answered) && savedState.answered.length === 15) {
+        answered = savedState.answered;
+        selectedIndexes = savedState.selectedIndexes || selectedIndexes;
+        missed = savedState.missed || missed;
+        updateScoreDisplay();
+        const firstOpen = answered.indexOf(null);
+        if (firstOpen === -1) {
+          document.getElementById('quiz-stepper').hidden = true;
+          showQuizComplete(answered.filter(function (a) { return a === 'correct'; }).length);
+        } else {
+          quizCurrent = firstOpen;
+          renderQuizCard(quizCurrent);
+        }
+      }
+      document.querySelectorAll('.micro-check').forEach(function (block) {
+        const picked = microAnswers[block.dataset.checkId];
+        if (!picked) return;
+        block.querySelectorAll('.micro-check-option').forEach(function (o) { o.disabled = true; });
+        block.querySelector('.micro-check-option[data-correct="true"]').classList.add('correct');
+        const pickedBtn = block.querySelector('[data-option-id="' + picked + '"]');
+        if (pickedBtn && !pickedBtn.dataset.correct) pickedBtn.classList.add('selected', 'wrong');
+      });
+      (function () {
+        const furthest = savedState.furthestSection || 0;
+        document.querySelectorAll('.sb-link').forEach(function (a) {
+          const n = parseInt((a.dataset.sectionId || '').replace('section-', ''), 10);
+          if (n && n <= furthest) a.classList.add('visited');
+        });
+      })();
+      document.getElementById('quiz-card-viewport').addEventListener('click', function (e) {
+        const optBtn = e.target.closest('.quiz-option');
+        if (!optBtn) return;
+        const card = optBtn.closest('.quiz-card');
+        const i = Number(card.dataset.question);
+        if (answered[i] === null) return;
+        optionOrder[blockKey(card)] = currentOrder(card);
+        saveProgress({ answered: answered, selectedIndexes: selectedIndexes, missed: missed, optionOrder: optionOrder });
+      });
+
+      /* ===== Pre-test ===== */
+      (function () {
+        const box = document.getElementById('pretest');
+        if (!box) return;
+        if (typeof (loadProgress() || {}).pretestScore === 'number') { box.remove(); return; }
+        const body = document.getElementById('pretest-body');
+        let idx = 0, score = 0;
+        const qs = quizCards.slice(0, 3).map(function (card) {
+          const c = card.cloneNode(true);
+          c.classList.remove('quiz-card');
+          c.classList.add('pretest-q');
+          c.hidden = true;
+          const ex = c.querySelector('.quiz-explanation');
+          if (ex) ex.remove();
+          c.querySelectorAll('.quiz-option').forEach(function (o) { o.classList.remove('selected', 'correct', 'wrong'); o.disabled = false; });
+          shuffleOptions(c);
+          body.appendChild(c);
+          return c;
+        });
+        qs[0].hidden = false;
+        body.addEventListener('click', function (e) {
+          const btn = e.target.closest('.quiz-option');
+          if (!btn || btn.disabled) return;
+          const q = btn.closest('.pretest-q');
+          const right = q.querySelector('.quiz-option[data-correct="true"]');
+          right.classList.add('correct');
+          if (btn === right) score++; else btn.classList.add('selected', 'wrong');
+          q.querySelectorAll('.quiz-option').forEach(function (o) { o.disabled = true; });
+          setTimeout(function () {
+            q.hidden = true;
+            idx++;
+            if (idx < qs.length) {
+              qs[idx].hidden = false;
+            } else {
+              saveProgress({ pretestScore: score });
+              body.innerHTML = '<p class="pretest-done">Starting point saved. Read on and see how far you move by the end.</p>';
+            }
+          }, 900);
+        });
+      })();
+
+      /* ===== Quiz DOCX export ===== */
+      function slugifyTitle(str) {
+        return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+      function triggerDocxDownload(doc, filename) {
+        window.docx.Packer.toBlob(doc).then(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(url);
+        });
+      }
+      function buildQuestionParagraphs(mode) {
+        const { Paragraph, TextRun } = window.docx;
+        const paras = [];
+        quizCards.forEach(function (card, i) {
+          const qText = card.querySelector('.quiz-q-text').textContent;
+          paras.push(new Paragraph({ text: (i + 1) + '. ' + qText, spacing: { before: 200, after: 80 } }));
+          const opts = Array.from(card.querySelectorAll('.quiz-option'));
+          opts.forEach(function (opt, idx) {
+            const letter = String.fromCharCode(65 + idx);
+            let line;
+            if (mode === 'results') {
+              const isCorrect = opt.dataset.correct === 'true';
+              const isSelected = selectedIndexes[i] === idx;
+              line = '     ' + letter + '.  ' + opt.textContent;
+              if (isSelected && isCorrect) line += '   ← Your answer (Correct)';
+              else if (isSelected && !isCorrect) line += '   ← Your answer (Incorrect)';
+              else if (isCorrect) line += '   ← Correct answer';
+            } else {
+              line = '     ☐ ' + letter + '.  ' + opt.textContent;
+            }
+            paras.push(new Paragraph({ text: line, spacing: { after: 40 } }));
+          });
+          if (mode === 'results' && answered[i] === 'wrong') {
+            const explanationText = card.querySelector('.quiz-explanation').textContent;
+            paras.push(new Paragraph({ children: [new TextRun({ text: 'Why: ' + explanationText, italics: true })], spacing: { before: 40, after: 80 } }));
+          }
+        });
+        return paras;
+      }
+      function generateBlankExamDocx() {
+        if (!window.docx) { alert('The export library did not load. Check your internet connection and try again.'); return; }
+        const { Document, Paragraph, TextRun, HeadingLevel, PageBreak } = window.docx;
+        const examParas = [
+          new Paragraph({ text: document.title + ' — Exam', heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: 'Name: _____________________________   Date: ______________', spacing: { after: 300 } })
+        ].concat(buildQuestionParagraphs(null));
+        const keyParas = [
+          new Paragraph({ children: [new PageBreak()] }),
+          new Paragraph({ text: 'Answer Key — Guide-Giver Copy Only', heading: HeadingLevel.HEADING_1, spacing: { after: 200 } })
+        ];
+        quizCards.forEach(function (card, i) {
+          const opts = Array.from(card.querySelectorAll('.quiz-option'));
+          const correctIdx = opts.findIndex(function (o) { return o.dataset.correct === 'true'; });
+          const explanationText = card.querySelector('.quiz-explanation').textContent;
+          keyParas.push(new Paragraph({ text: (i + 1) + '.  ' + String.fromCharCode(65 + correctIdx), spacing: { before: 120, after: 20 } }));
+          keyParas.push(new Paragraph({ children: [new TextRun({ text: explanationText, italics: true })], spacing: { after: 20 } }));
+        });
+        const doc = new Document({ sections: [{ children: examParas.concat(keyParas) }] });
+        triggerDocxDownload(doc, slugifyTitle(document.title) + '-exam.docx');
+      }
+      function generateResultsDocx() {
+        if (!window.docx) { alert('The export library did not load. Check your internet connection and try again.'); return; }
+        const { Document, Paragraph, HeadingLevel } = window.docx;
+        const correct = answered.filter(function (a) { return a === 'correct'; }).length;
+        const header = [
+          new Paragraph({ text: document.title + ' — My Results', heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: 'Name: _____________________________   Date: ______________', spacing: { after: 100 } }),
+          new Paragraph({ text: 'Score: ' + correct + ' / 15', spacing: { after: 300 } })
+        ];
+        const doc = new Document({ sections: [{ children: header.concat(buildQuestionParagraphs('results')) }] });
+        const dateStr = new Date().toISOString().slice(0, 10);
+        triggerDocxDownload(doc, slugifyTitle(document.title) + '-results-' + dateStr + '.docx');
+      }
+      document.getElementById('quiz-export-blank-btn').addEventListener('click', generateBlankExamDocx);
+      document.getElementById('quiz-export-results-btn').addEventListener('click', function () {
+        if (!this.disabled) generateResultsDocx();
+      });
+
+      /* ===== Heart / favorite toggle ===== */
+      function canonicalGuideUrl() {
+        let url = window.location.origin + window.location.pathname;
+        if (!url.endsWith('/')) url += '/';
+        return url;
+      }
+      const SUPABASE_URL = "https://gtwqjkrkupkcpxafdepg.supabase.co";
+      const SUPABASE_ANON_KEY = "sb_publishable_bYetZP5wIfGluCKzTjfcbg_O0FdpXwj";
+      const HEARTS_ENABLED = !!SUPABASE_URL && !!SUPABASE_ANON_KEY && !!window.supabase;
+      const sb = HEARTS_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+      const VOTER_KEY = "lol_voter_id_v1";
+      function getVoterId() {
+        try {
+          let id = localStorage.getItem(VOTER_KEY);
+          if (!id) {
+            id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('v-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+            localStorage.setItem(VOTER_KEY, id);
+          }
+          return id;
+        } catch (e) { return 'v-' + Date.now(); }
+      }
+      (function () {
+        if (!HEARTS_ENABLED) {
+          const t = document.getElementById('heart-toggle-top'); if (t) t.remove();
+          const c = document.querySelector('.heart-closing-card'); if (c) c.remove();
+          return;
+        }
+        const guideUrl = canonicalGuideUrl();
+        const voterId = getVoterId();
+        const buttons = [document.getElementById('heart-toggle-top'), document.getElementById('heart-toggle-bottom')].filter(Boolean);
+        let hearted = false;
+        function syncUI() {
+          buttons.forEach(function (btn) {
+            btn.setAttribute('aria-pressed', hearted ? 'true' : 'false');
+            btn.classList.add('pulsing');
+            setTimeout(function () { btn.classList.remove('pulsing'); }, 320);
+          });
+        }
+        sb.from('guide_hearts').select('guide_url').eq('guide_url', guideUrl).eq('voter_id', voterId)
+          .then(function (res) {
+            if (!res.error && res.data && res.data.length > 0) {
+              hearted = true;
+              buttons.forEach(function (btn) { btn.setAttribute('aria-pressed', 'true'); });
+            }
+          })
+          .catch(function () { /* non-critical */ });
+        async function toggle() {
+          const nowActive = !hearted;
+          hearted = nowActive;
+          syncUI();
+          try {
+            if (nowActive) {
+              const { error } = await sb.from('guide_hearts').insert({ guide_url: guideUrl, voter_id: voterId });
+              if (error && error.code !== '23505') throw error;
+            } else {
+              const { error } = await sb.from('guide_hearts').delete().eq('guide_url', guideUrl).eq('voter_id', voterId);
+              if (error) throw error;
+            }
+          } catch (err) {
+            hearted = !nowActive;
+            syncUI();
+          }
+        }
+        buttons.forEach(function (btn) { btn.addEventListener('click', toggle); });
+      })();
+
+      /* ===== Listen aloud ===== */
+      (function () {
+        const btn = document.getElementById('listen-toggle');
+        if (!btn) return;
+        if (!('speechSynthesis' in window)) { btn.style.display = 'none'; return; }
+        const sections = Array.from(document.querySelectorAll('section[id]'));
+        let queue = [];
+        let queueIndex = 0;
+        let speaking = false;
+        function findCurrentSectionIndex() {
+          let idx = 0;
+          sections.forEach(function (sec, i) {
+            if (sec.getBoundingClientRect().top <= 120) idx = i;
+          });
+          return idx;
+        }
+        function speakNext() {
+          if (queueIndex >= queue.length) { stop(); return; }
+          const utter = new SpeechSynthesisUtterance(queue[queueIndex].innerText || '');
+          utter.rate = 1;
+          utter.onend = function () {
+            if (!speaking) return;
+            queueIndex++;
+            speakNext();
+          };
+          speechSynthesis.speak(utter);
+        }
+        function start() {
+          speaking = true;
+          btn.classList.add('speaking');
+          btn.querySelector('.listen-icon').textContent = '⏸';
+          btn.setAttribute('aria-pressed', 'true');
+          queue = sections.slice(findCurrentSectionIndex());
+          queueIndex = 0;
+          speakNext();
+        }
+        function stop() {
+          speaking = false;
+          speechSynthesis.cancel();
+          btn.classList.remove('speaking');
+          btn.querySelector('.listen-icon').textContent = '🔊';
+          btn.setAttribute('aria-pressed', 'false');
+        }
+        btn.addEventListener('click', function () { speaking ? stop() : start(); });
+        document.body.addEventListener('click', function (e) {
+          if (speaking && e.target.closest('a[href^="#"]')) stop();
+        });
+      })();
+
+      /* ===== Print ===== */
+      const printBtn = document.getElementById('print-pdf-btn');
+      if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+
+      /* ===== Share ===== */
+      (function () {
+        const btn = document.getElementById('share-btn');
+        const toast = document.getElementById('share-toast');
+        if (!btn) return;
+        function showToast(message) {
+          if (!toast) return;
+          toast.textContent = message;
+          toast.classList.add('visible');
+          clearTimeout(showToast._t);
+          showToast._t = setTimeout(function () { toast.classList.remove('visible'); }, 2400);
+        }
+        function getShareData() {
+          const title = document.title || 'Interactive Guide';
+          const taglineEl = document.getElementById('hero-tagline');
+          const text = taglineEl ? taglineEl.textContent.trim() : '';
+          const url = window.location.href;
+          return { title: title, text: text, url: url };
+        }
+        btn.addEventListener('click', async function () {
+          const data = getShareData();
+          if (navigator.share) {
+            try {
+              await navigator.share(data);
+              return;
+            } catch (err) {
+              if (err && err.name === 'AbortError') return;
+            }
+          }
+          const shareText = [data.title, data.text, data.url].filter(Boolean).join('\n');
+          try {
+            await navigator.clipboard.writeText(shareText);
+            showToast('Link copied to clipboard');
+          } catch (err) {
+            const ta = document.createElement('textarea');
+            ta.value = shareText;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand('copy');
+              showToast('Link copied to clipboard');
+            } catch (err2) {
+              showToast('Could not copy — copy the URL from the address bar');
+            }
+            document.body.removeChild(ta);
+          }
+        });
+      })();
+
+      /* ===== Topbar overflow menu (mobile) ===== */
+      (function () {
+        const moreBtn = document.getElementById('topbar-more-btn');
+        const moreMenu = document.getElementById('topbar-more-menu');
+        if (!moreBtn || !moreMenu) return;
+        function closeMenu() {
+          moreMenu.classList.remove('open');
+          moreBtn.setAttribute('aria-expanded', 'false');
+        }
+        function openMenu() {
+          moreMenu.classList.add('open');
+          moreBtn.setAttribute('aria-expanded', 'true');
+        }
+        moreBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          moreMenu.classList.contains('open') ? closeMenu() : openMenu();
+        });
+        moreMenu.addEventListener('click', function (e) {
+          if (e.target.closest('button')) closeMenu();
+        });
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('#topbar-more-wrap')) closeMenu();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') closeMenu();
+        });
+      })();
+
+      /* ===== Chart.js ===== */
+      const charts = [];
+      const conceptGroups = [
+        { name: 'Store & describe data', items: 'Variables, Data Types, Arrays / Lists, Objects / Structures, Scope' },
+        { name: 'Act & decide', items: 'Operators, Conditions, Loops' },
+        { name: 'Organize & reuse code', items: 'Functions, Classes / OOP, Modules / Libraries, Comments' },
+        { name: 'Connect & protect', items: 'Input / Output, Error Handling, Events' }
+      ];
+      function renderCharts() {
+        if (!window.Chart) return;
+        charts.forEach(function (c) { c.destroy(); });
+        charts.length = 0;
+        const cs = getComputedStyle(document.documentElement);
+        const accent = cs.getPropertyValue('--accent').trim();
+        const accent2 = cs.getPropertyValue('--accent2').trim();
+        const accent3 = cs.getPropertyValue('--accent3').trim();
+        const green = cs.getPropertyValue('--green').trim();
+        const muted = cs.getPropertyValue('--text-muted').trim();
+        const card = cs.getPropertyValue('--bg-card').trim();
+        const canvas = document.getElementById('chart-concepts');
+        if (!canvas) return;
+        charts.push(new Chart(canvas, {
+          type: 'doughnut',
+          data: {
+            labels: conceptGroups.map(function (g) { return g.name; }),
+            datasets: [{ data: [5, 3, 4, 3], backgroundColor: [accent, accent2, accent3, green], borderColor: card, borderWidth: 3 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: muted, boxWidth: 12, padding: 14 } },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) { return ctx.label + ': ' + ctx.parsed + ' concepts'; },
+                  afterLabel: function (ctx) { return conceptGroups[ctx.dataIndex].items; }
+                }
+              }
+            }
+          }
+        }));
+      }
+      renderCharts();
+      document.getElementById('theme-toggle').addEventListener('click', function () { setTimeout(renderCharts, 50); });
+
+    });
+  </script>
+</body>
+</html>
